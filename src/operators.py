@@ -171,8 +171,8 @@ class X(qOperation):
         self.tensor = self.matrix
 
 class Y(qOperation):
-    matrix = np.array([[0.+1j, 0.+0j],
-                       [0.+0j, 0.-1j]])
+    matrix = np.array([[0.+0j, 0.-1j],
+                       [0.+1j, 0.+0j]])
     name = 'Y'
     diagonal = False
     n_qubit = 1
