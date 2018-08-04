@@ -94,15 +94,28 @@ def test_gates():
         [Y_1_2(0)],
         [T(0)],
         [X(0)],
-        [Y(0)]
+        [X(0),X(0)],
+        [Y(0)],
+        [Z(0)],
+        [Y(0),Z(0)],
+        [Y(0),T(0)],
+        [Y(0),X(0)],
+        [Y(0),Y(0)],
+        [Y(0),X_1_2(0)],
+        [Y(0),Y_1_2(0)],
+        [cZ(0,1)],
+        [Y(0),Z(1)],
+        [Y(0),cZ(0,1)],
+        [Y(1),cZ(0,1)],
+        [Y(1),Y(0),cZ(0,1)]
     ]
     for circuit in test_cirquits:
         cirq_circuit = cirq.Circuit()
-        side_length = 1
+        side_length = 2
         cirq_circuit.append(op.to_cirq_2d_circ_op(side_length) for op in circuit)
 
         print("Testing circuit "+str(circuit))
-        print("Cirq"+str(cirq_circuit))
+        print(cirq_circuit)
         simulator = cirq.google.XmonSimulator()
 
         result = simulator.simulate(cirq_circuit)

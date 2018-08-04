@@ -110,8 +110,9 @@ class cZ(qOperation):
         return np.array([[t[i,i,j,j] for i in r] for j in r])
 
 class T(qOperation):
-    matrix = np.array([[1.+0.j,  0.+0.j        ],
-                       [0.+0.j, np.exp(1.j*np.pi/4)]])
+    matrix = np.array([
+        [np.exp(1.j*np.pi/8),  0.+0.j],
+        [0.+0.j, 1j]])
     name = 'T'
     n_qubit = 1
 
@@ -141,6 +142,7 @@ class X_1_2(qOperation):
         self._check_qubit_count(qubits)
         self._qubits = qubits
         self.tensor = self.matrix
+        self.tensor = self.tensor*np.exp(-1j*np.pi/4)
 
 class Y_1_2(qOperation):
     matrix = np.array([[ 0.5+0.5j, -0.5-0.5j],
@@ -155,6 +157,7 @@ class Y_1_2(qOperation):
         self._check_qubit_count(qubits)
         self._qubits = qubits
         self.tensor = self.matrix
+        self.tensor = self.tensor*np.exp(-1j*np.pi/4)
 
 class X(qOperation):
     matrix = np.array([[0.+0.j, 1.+0j],
@@ -169,6 +172,7 @@ class X(qOperation):
         self._check_qubit_count(qubits)
         self._qubits = qubits
         self.tensor = self.matrix
+        self.tensor = self.tensor*0.-1j
 
 class Y(qOperation):
     matrix = np.array([[0.+0j, 0.-1j],
@@ -183,3 +187,19 @@ class Y(qOperation):
         self._check_qubit_count(qubits)
         self._qubits = qubits
         self.tensor = self.matrix
+        self.tensor = self.tensor*0.-1j
+
+class Z(qOperation):
+    matrix = np.array([[1.+0j, 0.-0j],
+                       [0.+0j, -1.+0j]])
+    name = 'Z'
+    diagonal = False
+    n_qubit = 1
+
+    def cirq_op(self, x): return cirq.Z(x)
+
+    def __init__(self, *qubits):
+        self._check_qubit_count(qubits)
+        self._qubits = qubits
+        self.tensor = self.matrix
+        self.tensor = self.tensor*0.-1j

@@ -50,12 +50,14 @@ def naive_eliminate(graph,tensors):
     T = tensors[0]
     vs = T.variables
     indexes = []
-    for i in range(0,-len(vs),-1):
+    for i in range(-1,-len(vs),-1):
         indexes.append(vs.index(i))
+    indexes.append(vs.index(0))
     print(indexes)
     ordered = T._tensor.transpose(indexes)
     #fl = tensors[0]._tensor.flatten()
-    fl = ordered[0,:].flatten()
+    print(ordered)
+    fl = ordered[:,0].flatten()
 
     if len(fl)<100:
         print('me',fl.round(2))
@@ -82,6 +84,7 @@ def circ2graph(circuit):
 
     current_var = qubit_count
     variable_col= list(range(1,qubit_count+1))
+    print(circuit)
 
     for layer in circuit[1:-1]:
         for op in layer:
@@ -112,6 +115,9 @@ def circ2graph(circuit):
                 tensor.add_variable( current_var)
             tensors.append(tensor)
     i = 1
+    # Will fail if thee is 
+    if len(circuit[-1])!=qubit_count:
+        log.warn("use max gates count on last layer")
     for op in circuit[-1]:
         tensor = Tensor(op)
         tensor.add_variable(variable_col[i-1],-i)

@@ -30,12 +30,15 @@ class Tensor():
             self._get_var_ordering(var)
         )
     def multiply(self,tensor,var):
+        print(self,tensor)
         t = Tensor()
         _t = np.tensordot(
-            self._tensor,tensor._tensor,
+            self._tensor,
+            tensor._tensor,
             axes=0)
         xs = self.variables+tensor.variables
         indexes = [i for i,x in enumerate(xs) if x ==var]
+        print("indexes of m",indexes)
 
         _t = np.diagonal(
             _t,

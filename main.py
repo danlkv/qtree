@@ -27,8 +27,8 @@ def main():
     log.info("from cirq:"+str(target_amp))
     print()
     cnffile = 'quickbb.cnf'
-    gen_cnf(cnffile,graph)
-    run_quickbb(cnffile)
+    #gen_cnf(cnffile,graph)
+    #run_quickbb(cnffile)
 
 if __name__=="__main__":
     main()
