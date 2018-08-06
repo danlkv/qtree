@@ -1,8 +1,11 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
-from .Tensor import Tensor
+#from .Tensor import Tensor
 from .operators import *
+from .einsum.Expression import Expression
+from .einsum.Variable import Variable
+from .einsum.Tensor import Tensor
 
 class Bucket():
     tensors = []
@@ -67,20 +70,28 @@ def naive_eliminate(graph,tensors):
 def circ2graph(circuit):
     g = nx.Graph()
     tensors2vars = []
+    circuit.reverse()
 
     qubit_count = len(circuit[0])
     print(qubit_count)
 
     # we start from 0 here to avoid problems with quickbb
     tensors =[]
+    expr = Expression()
+    vari = [Variable(0)]
+    free_vars = [vari[0]]
 
     # Process first layer
     for i in range(1, qubit_count+1):
+        op = circuit[0][i-1]
         g.add_node(i)
-        tensor =Tensor(circuit[0][i-1])
+        tensor =Tensor(op.tensor)
         # 0 is inital index
-        tensor.add_variable(0,i)
-        tensors.append(tensor)
+        vari.append(Variable(i))
+        print('i',i,'vari',vari)
+        tensor.add_variables(vari[0],vari[i])
+        tensor.name=op.name
+        expr+=tensor
 
     current_var = qubit_count
     variable_col= list(range(1,qubit_count+1))
@@ -88,7 +99,7 @@ def circ2graph(circuit):
 
     for layer in circuit[1:-1]:
         for op in layer:
-            tensor = Tensor(op)
+            tensor = Tensor(op.tensor)
             if not op.diagonal:
                 # Non-diagonal gate adds a new variable and
                 # an edge to graph
@@ -96,9 +107,10 @@ def circ2graph(circuit):
                 g.add_edge(
                     variable_col[op._qubits[0]],
                     current_var+1 )
-                tensor.add_variable(
-                    variable_col[op._qubits[0]],
-                    current_var+1 )
+                vari.append(Variable(current_var+1))
+                tensor.add_variables(
+                    vari[variable_col[op._qubits[0]]],
+                    vari[current_var+1] )
                 current_var += 1
 
                 variable_col[op._qubits[0]] = current_var
@@ -108,22 +120,27 @@ def circ2graph(circuit):
                 i1 = variable_col[op._qubits[0]]
                 i2 = variable_col[op._qubits[1]]
                 g.add_edge(i1,i2)
-                tensor.add_variable(i1,i2)
+                tensor.add_variables(vari[i1],vari[i2])
             # tensors2 vars is a list of tensos
             # which leads to variables it operates on
             else:
-                tensor.add_variable( current_var)
-            tensors.append(tensor)
+                tensor.add_variables( vari[current_var])
+            tensor.name=op.name
+            expr+=tensor
     i = 1
     # Will fail if thee is 
     if len(circuit[-1])!=qubit_count:
         log.warn("use max gates count on last layer")
     for op in circuit[-1]:
-        tensor = Tensor(op)
-        tensor.add_variable(variable_col[i-1],-i)
-        tensors.append(tensor)
+        tensor = Tensor(op.tensor)
+        xvar = Variable(-i)
+        vari.append(xvar)
+        free_vars.append(xvar)
+        tensor.add_variables(vari[variable_col[i-1]],xvar)
+        expr += tensor
         i+=1
     log.info(f"there are {len(tensors)} tensors")
+    expr.free_vars = free_vars
 
     v = g.number_of_nodes()
     e = g.number_of_edges()
@@ -142,5 +159,6 @@ def circ2graph(circuit):
     plt.figure(figsize=(10,10))
     nx.draw(g,with_labels=True)
     plt.savefig('graph.eps')
-    return g,tensors
+    
+    return g,expr
 
