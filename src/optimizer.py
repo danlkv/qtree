@@ -70,7 +70,7 @@ def naive_eliminate(graph,tensors):
 def circ2graph(circuit):
     g = nx.Graph()
     tensors2vars = []
-    circuit.reverse()
+    #circuit.reverse()
 
     qubit_count = len(circuit[0])
     print(qubit_count)
@@ -124,7 +124,8 @@ def circ2graph(circuit):
             # tensors2 vars is a list of tensos
             # which leads to variables it operates on
             else:
-                tensor.add_variables( vari[current_var])
+                i1 = variable_col[op._qubits[0]]
+                tensor.add_variables( vari[i1])
             tensor.name=op.name
             expr+=tensor
     i = 1

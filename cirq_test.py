@@ -60,6 +60,8 @@ def get_amplitude_from_cirq(filename, target_state_str):
     print("Circuit:")
     print(cirq_circuit)
     simulator = cirq.google.XmonSimulator()
+    o = cirq.QubitOrder.DEFAULT
+    print("order:",o.order_for([cirq.GridQubit(0,0),cirq.GridQubit(0,2)]))
 
     result = simulator.simulate(cirq_circuit)
     print("Simulation completed\n")

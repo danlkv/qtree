@@ -32,21 +32,21 @@ print()
 print()
 
 e = Expression()
-t1 = np.random.randn(2,40)
-t2 = np.random.randn(50,6,40)
-t3 = np.random.randn(3,40,50)
+t1 = np.random.randn(5,40)
+t2 = np.random.randn(40)
+t3 = np.random.randn(3,40,8)
 e.set_tensors([
     Tensor(t1,variables=[vs[1],vs[2]]),
-    Tensor(t2,variables=[vs[3],vs[4],vs[2]]),
+    Tensor(t2,variables=[vs[2]]),
     Tensor(t3,variables=[vs[5],vs[2],vs[3]]),
 ])
 e.set_order([3,2])
 start_time = time.time()
-tensors = e.evaluate([vs[1],vs[4],vs[5]])
+tensors = e.evaluate([vs[1],vs[5],vs[3]])
 print("--- %s seconds ---" % (time.time() - start_time))
 
 print(tensors[0]._tensor)
 start_time = time.time()
-print(np.einsum('ij,klj,mjk->ilm',t1,t2,t3))
+print(np.einsum('ij,j,mjk->imk',t1,t2,t3))
 print("--- %s seconds ---" % (time.time() - start_time))
 

@@ -56,8 +56,8 @@ class qOperation:
         return np.dot(self.matr, vec)
 
 class H(qOperation):
-    matrix = 1/np.sqrt(2) * np.array([[ -1.j,  -1.j],
-                                      [ -1.j, 1.j]])
+    matrix = 1/np.sqrt(2) * np.array([[ 1,  1+0.j],
+                                      [ 1, -1]])
     name = 'H'
     cirq_op = cirq.H
     diagonal = False
@@ -111,8 +111,8 @@ class cZ(qOperation):
 
 class T(qOperation):
     matrix = np.array([
-        [np.exp(1.j*np.pi/8),  0.+0.j],
-        [0.+0.j, np.exp(-1.j*np.pi/8)]])
+        [np.exp(-1.j*np.pi/8),  0.+0.j],
+        [0.+0.j, np.exp(+1.j*np.pi/8)]])
     name = 'T'
     n_qubit = 1
 
@@ -146,7 +146,7 @@ class X_1_2(qOperation):
 
 class Y_1_2(qOperation):
     matrix = np.array([[ 0.5+0.5j, -0.5-0.5j],
-                       [ 0.5+0.5j,  0.5+0.5j]])
+                       [ 0.5+0.5j,  0.5+0.5j]]).T
     name = 'Y_1_2'
     diagonal = False
     n_qubit = 1
