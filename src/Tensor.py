@@ -1,12 +1,13 @@
 import numpy as np
 import logging
+from .Variable import Variable
 log = logging.getLogger('qtree')
 
 class Tensor():
-    def __init__(self,op=None):
-        if op:
-            self._tensor = op.tensor
-            #self._op = op
+    def __init__(self,tensor=None):
+        if not isinstance(tensor,np.array):
+            raise Exception("expected numpy array got ",tensor)
+        self._tensor = tensor
         self.variables = []
 
     def add_variable(self,*vs):
@@ -32,19 +33,18 @@ class Tensor():
     def multiply(self,tensor,var):
         print(self,tensor)
         t = Tensor()
-        _t = np.tensordot(
-            self._tensor,
-            tensor._tensor,
-            axes=0)
+
         xs = self.variables+tensor.variables
         indexes = [i for i,x in enumerate(xs) if x ==var]
-        print("indexes of m",indexes)
+        # make target variable last index
+        orders =[ np.arange(-1,len(self.variables)-1) + indexes[0],
+                 np.arange(-1,len(tensor.variables)-1) + indexes[1]
+                ]
+        print("indexes of m",indexes,"orders:",orders)
+        a = np.transpose(self._tensor,orders[0])
+        b = np.transpose(tensor._tensor,orders[1])
+        _t = np.einsum('...ji,...ki->...jki')
 
-        _t = np.diagonal(
-            _t,
-            axis1=indexes[0],
-            axis2=indexes[1]
-        )
         t._tensor = _t
         new_variables = [x for i,x in enumerate(xs)
                          if x !=var]
@@ -94,7 +94,7 @@ class Tensor():
         return t
     def __repr__(self):
         if sum(self._tensor.shape)<10:
-            return "<tensor \n "+self._tensor.__repr__()+ '\nvars: '+str(self.variables)+">"
+            return "<tensor \n "+str(self._tensor.round(4))+ '\nvars: '+str(self.variables)+">"
         else:
             s = self._tensor.shape
             r = len(s)
