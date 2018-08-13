@@ -18,7 +18,10 @@ def main():
 def start_simulation(circuit_file,target_state):
     circuit = read_circuit_file(circuit_file)
     sim = Simulator()
-    final_state_qtree = sim.simulate(circuit)
+    final_state_qtree = sim.simulate(
+        circuit,
+        #graph_model_plot='gr.png'
+    )
 
     cirq_sim = cirq.google.XmonSimulator()
     cirq_circuit = circuit.convert_to_cirq()

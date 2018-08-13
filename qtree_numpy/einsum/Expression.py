@@ -9,7 +9,8 @@ import logging
 log = logging.getLogger('qtree')
 
 class Expression:
-    def __init__(self):
+    def __init__(self,graph_model_plot=None):
+        self.graph_model_plot=graph_model_plot
         self._tensors = []
         self._variables = []
         self._graph = nx.Graph()
@@ -43,9 +44,10 @@ class Expression:
         graph = self._graph
         graph.remove_nodes_from([
             v._id for v in free_vars])
-        plt.figure(figsize=(10,10))
-        nx.draw(graph,with_labels=True)
-        plt.savefig('graph.eps')
+        if self.graph_model_plot:
+            plt.figure(figsize=(10,10))
+            nx.draw(graph,with_labels=True)
+            plt.savefig(self.graph_model_plot)
         gen_cnf(cnffile,graph)
         ordering = run_quickbb(cnffile)
         print("Ordering from QuickBB is",ordering)

@@ -17,12 +17,15 @@ class Simulator:
         """
         self.num_threads = num_threads
         self.optimization = optimization
-    def simulate(self,circuit,inital_state=None):
+    def simulate(self,circuit,inital_state=None,
+                 graph_model_plot=None):
         """
         Simulate a cirquit
         :param circuit: a non-empty qtree.Circuit object
         :param inital_state: a numpy-array of length 2^N
         with complex amplitudes
+        :param graph_model_plot: a file where a plot of graph model
+        will be saved. Default is None
         :return: a Numpy-array of complex amplitudes for final state
         """
         self.__check_if_empty(circuit)
@@ -35,6 +38,7 @@ class Simulator:
         self.__check_inital_state_length(qubit_count,inital_state)
 
         e =  self.build_expr(circuit.circuit)
+        e.graph_model_plot = graph_model_plot
         # the result is tensor of rank len(free_variables) = 1+N
         tensors = e.evaluate()
         if len(tensors)>1:
