@@ -9,6 +9,14 @@ tensor_count = 0
 class Tensor():
     def __init__(self,tensor=None,
                  variables=None,name=None):
+        """Create a tensor from np.array or an empty one
+        Increments a global `tensor_count` variable
+
+        Parameters
+        ----------
+        tensor: numpy.ndarray
+        variables: list [Variable]
+        """
         if isinstance(tensor,list):
             tensor = np.array(tensor)
         global tensor_count
@@ -30,12 +38,29 @@ class Tensor():
             v.decrement()
 
     def add_variables(self,*vs):
+        """Add variables to the tensor, update `self.rank`
+        Increments `ref` of each variable
+
+        Parameters
+        ----------
+        vs : any quantity of params each is Variable
+        """
         log.debug('adding vars'+str(vs))
         self.variables += vs
         [v.increment() for v in vs]
         self.rank = len(self.variables)
 
     def sum_by(self,v):
+        """Sum the tensor by index corresponding to Variable
+        ij->j
+
+        Parameters
+        ----------
+        v : Variable
+        Returns
+        ----------
+        self: Tensor
+        """
         if isinstance(v,Variable):
             axis = self.variables.index(v)
         else:
@@ -45,6 +70,8 @@ class Tensor():
         return self
 
     def merge_with(self,tensors):
+        """A wrapper for multiplicating with a list of tensors
+        """
         if len(tensors)>0:
             res = self.multiply(tensors[0])
             for t in tensors[1:]:
@@ -54,6 +81,12 @@ class Tensor():
         else: return self
 
     def reorder_by_id(self,id_list):
+        """Transposes the tensor to corresponding variable order
+        Mutates `self.variables` and `self.tenor`
+        parameters
+        ----------
+        id_list : list [int]
+        """
         ordering = []
         new_vars = []
         for i in id_list:
@@ -74,7 +107,12 @@ class Tensor():
         except ValueError:
             pass
         return self
+
     def multiply(self,tensor):
+        """Tensor dot of two tensors, and diagonalize the result over all
+        duplicates. New variable list is unique vars from operands' lists
+        ij,ik -> ijik then ijik->jki
+        """
         t = Tensor()
         t.add_variables(
             *(self.variables+tensor.variables))
@@ -87,6 +125,9 @@ class Tensor():
         return t
 
     def diagonalize_if_dupl(self):
+        """Get a diagonal for tensor with same indices
+        ijikk->ijk
+        """
         def duplicates(lst,item):
             return [i for i,x in enumerate(lst) if x==item]
         l = self.variables
@@ -110,10 +151,12 @@ class Tensor():
         self.variables = l
 
     def __str__(self):
-        SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-        name= self.name+''
+        name= self.name
         vs = ''.join([str(v._id) for v in self.variables])
-        return name+vs.translate(SUB)
+        # will make trash if terminal doesnt support unicode
+        SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        vs = vs.translate(SUB)
+        return name+vs
     def __repr__(self):
         if sum(self._tensor.shape)<10:
             return "<tensor \n "+str(self._tensor.round(4))+ '\nvars: '+str(self.variables)+">"
