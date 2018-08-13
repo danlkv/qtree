@@ -110,7 +110,10 @@ class Tensor():
         self.variables = l
 
     def __str__(self):
-        return self.name+'_'+','.join([str(v._id) for v in self.variables])
+        SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+        name= self.name+''
+        vs = ''.join([str(v._id) for v in self.variables])
+        return name+vs.translate(SUB)
     def __repr__(self):
         if sum(self._tensor.shape)<10:
             return "<tensor \n "+str(self._tensor.round(4))+ '\nvars: '+str(self.variables)+">"

@@ -72,7 +72,7 @@ class Simulator:
             op = first_layer[i]
             tensor =Tensor(op.tensor)
             tensor.add_variables(vari[0],vari[i+1])
-            tensor.name=op.name
+            tensor.name=op.name+'@'+str(op._qubits[0])
             expr+=tensor
 
         current_var = qubit_count
@@ -104,7 +104,7 @@ class Simulator:
                     # just add variable corresponding to a qubit 
                     # operation acts on
                     tensor.add_variables(variable_of_qubit)
-                tensor.name=op.name
+                tensor.name=op.name+'@'+str(op._qubits[0])
                 expr+=tensor
 
         # Process last layer

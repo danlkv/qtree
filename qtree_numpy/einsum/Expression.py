@@ -115,4 +115,4 @@ class Expression:
             self._tensors.append(new_t)
         return self._tensors
     def __repr__(self):
-        return '.'.join([str(t) for t in self._tensors])
+        return ' '.join([str(t) for t in self._tensors])
