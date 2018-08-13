@@ -24,7 +24,7 @@ def start_simulation(circuit_file,target_state):
     cirq_circuit = circuit.convert_to_cirq()
     print(cirq_circuit)
     cirq_result =cirq_sim.simulate(cirq_circuit)
-    print("cirq ",cirq_result.final_state)
+    print("cirq ",cirq_result.final_state.round(4))
     print("qtree", final_state_qtree.round(4))
 
 def read_circuit_file(filename, max_depth=None):
@@ -32,12 +32,19 @@ def read_circuit_file(filename, max_depth=None):
     circuit = Circuit()
     with open(filename, "r") as fp:
         qubit_count = int(fp.readline())
+        current_layer = 0
         log.info("There should be {:d} qubits in circuit".format(qubit_count))
         for line in fp:
             m = re.search(r'(?P<layer>[0-9]+) (?=[a-z])', line)
+            # Read circuit layer by layer
+            layer_num = int(m.group('layer'))
             if m is None:
                 raise Exception(
                     "file format error at line {}".format(line))
+
+            if layer_num > current_layer:
+                circuit.next_layer()
+                current_layer = layer_num
             op_str = line[m.end():]
             op = OP.factory(op_str)
             circuit.append(op)

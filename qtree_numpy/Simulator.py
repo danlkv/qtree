@@ -64,7 +64,6 @@ class Simulator:
         for i in range(qubit_count):
             # create new variable
             vari.append(Variable(i+1))
-            print('i',i+1,'vari',vari)
             # Create new tensor and bind it with Variable(0)
             op = first_layer[i]
             tensor =Tensor(op.tensor)
@@ -81,7 +80,6 @@ class Simulator:
             for op in layer:
                 tensor = Tensor(op.tensor)
                 variable_of_qubit = vari[variable_col[op._qubits[0]]]
-                print('var of q',variable_of_qubit)
                 if not op.diagonal:
                     # Non-diagonal gate adds a new variable and
                     # an edge to graph
@@ -97,7 +95,6 @@ class Simulator:
                     # cZ connects two variables with an edge
                     i1 = variable_col[op._qubits[0]]
                     i2 = variable_col[op._qubits[1]]
-                    print('i1,i2,vari',i1,i2,vari)
                     tensor.add_variables(vari[i1],vari[i2])
                 else:
                     # just add variable corresponding to a qubit 

@@ -1,5 +1,5 @@
 import networkx as nx
-import subprocess
+import subprocess,re
 import logging as log
 import logging
 log = logging.getLogger('qtree')
@@ -49,7 +49,7 @@ def run_quickbb(cnffile, command='./quickbb_64'):
     return _get_ordering(output)
 
 def _get_ordering(out):
-    m = re.search(r'(?P<peo>(\d+ )+).*Treewidth=(?P<treewidth>\s\d+)',
+    m = re.search(b'(?P<peo>(\d+ )+).*Treewidth=(?P<treewidth>\s\d+)',
                   out, flags=re.MULTILINE | re.DOTALL )
 
     peo = [int(ii) for ii in m['peo'].split()]

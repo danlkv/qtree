@@ -30,9 +30,10 @@ class Tensor():
             v.decrement()
 
     def add_variables(self,*vs):
-        print('adding vars'+str(vs))
+        log.debug('adding vars'+str(vs))
         self.variables += vs
         [v.increment() for v in vs]
+        self.rank = len(self.variables)
 
     def sum_by(self,v):
         if isinstance(v,Variable):
@@ -62,8 +63,8 @@ class Tensor():
                         self.variables.index(v)
                     )
                     new_vars.append(v)
-        print('before',self)
-        print('ordering',ordering)
+        log.info('before reordering %s',self)
+        log.info('ordering indices %s',ordering)
         self.variables = new_vars
         try:
             self._tensor =np.transpose(
@@ -97,8 +98,7 @@ class Tensor():
                 break
             dup = duplicates(l,v)
             if len(dup)>1:
-                print("__duplicate of",v,'@',dup)
-                print("__vars",l)
+                log.debug("  duplicate of %s @ %s",v,dup)
                 self._tensor = np.diagonal(
                     self._tensor,
                     axis1=dup[0],

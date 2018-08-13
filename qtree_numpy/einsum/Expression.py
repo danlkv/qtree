@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 
 from .Variable import Variable
 from .Tensor import Tensor
@@ -20,7 +21,7 @@ class Expression:
         self._tensors.append(tensor)
         self._variables+=tensor.variables
         self._variables = list(set(self._variables))
-        print('addwd vars to exp',self._variables)
+        #print('addwd vars to exp',self._variables)
         self.__update_graph(tensor)
         return self
     def set_tensors(self,tensors):
@@ -32,16 +33,22 @@ class Expression:
         if len(tensor.variables)==2:
             self._graph.add_edge(
                 tensor.variables[0]._id,
-                tensor.variables[0]._id
+                tensor.variables[1]._id
             )
         elif len(tensor.variables)>2:
             # TODO make it work for more than 2 variables
             raise Exception('found a tensor with more than 2 vars.')
-    def set_order_from_qbb(self):
+    def set_order_from_qbb(self,free_vars):
         cnffile = 'quickbb.cnf'
         graph = self._graph
+        graph.remove_nodes_from([
+            v._id for v in free_vars])
+        plt.figure(figsize=(10,10))
+        nx.draw(graph,with_labels=True)
+        plt.savefig('graph.eps')
         gen_cnf(cnffile,graph)
         ordering = run_quickbb(cnffile)
+        print("Ordering from QuickBB is",ordering)
         self.set_order(ordering)
 
     def set_order(self,order):
@@ -71,29 +78,31 @@ class Expression:
         :return: a Tensor with order=len(free_vars)
         """
         # variables are expexted to be sorted
-        vs = []
-        print('evalung',str(self))
         if not free_vars:
             free_vars = self.free_vars
+        # Iterate over only non-free vars
+
+        vs = []
+        log.info('Evaluating the expression: %s',str(self))
+        self.set_order_from_qbb(free_vars)
         for v in self._variables:
             if v not in free_vars:
                 vs.append(v)
         for var in vs:
-            print('eliminating Variable',var)
-            print('expr',self)
+            log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors
                               if var in t.variables]
-            print('tensors of var:\n',
+            log.info('Eliminating %s \twith %i tensors, sum ranks:%i',
+                     var,len(tensors_of_var),
+                    sum([t.rank for t in tensors_of_var]))
+            log.debug('tensors of var: \n%s',
                   tensors_of_var,
                  )
             tensor_of_var = tensors_of_var[0].merge_with(
                 tensors_of_var[1:])
-            print(
-                  '\n tensor after merge:\n',
-                  tensor_of_var.__repr__())
             tensor_of_var.diagonalize_if_dupl()
             new_t = tensor_of_var.sum_by(var)
-            print('tensor after sum:\n',new_t)
+            log.debug('tensor after sum:\n%s',new_t)
             new_expr_tensors = []
             for t in self._tensors:
                 if t not in tensors_of_var:
