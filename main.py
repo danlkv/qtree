@@ -1,79 +1,53 @@
 import argparse,re
+import numpy as np
 from src.logging import get_logger
-get_logger()
+log = get_logger()
+from qtree_numpy import Simulator, Circuit
+from qtree_numpy.operators import *
 
-from src.operators import *
-from src.optimizer  import *
-from src.quickbb_api import *
-from cirq_test import *
 
+OP = qOperation()
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('circuitfile', help='file with circuit')
     parser.add_argument('target_state',
                         help='state x against which amplitude is computed')
     args = parser.parse_args()
+    start_simulation(args.circuitfile,args.target_state)
 
-    target_amp,state = get_amplitude_from_cirq(
-       args.circuitfile, args.target_state)
+def start_simulation(circuit_file,target_state):
+    circuit = read_circuit_file(circuit_file)
+    sim = Simulator()
+    final_state_qtree = sim.simulate(circuit)
 
-    n_qubits, circuit = read_circuit_file(args.circuitfile)
+    cirq_sim = cirq.google.XmonSimulator()
+    cirq_circuit = circuit.convert_to_cirq()
+    print(cirq_circuit)
+    cirq_result =cirq_sim.simulate(cirq_circuit)
+    print("cirq ",cirq_result.final_state)
+    print("qtree", final_state_qtree.round(4))
 
-    graph , expr = circ2graph(circuit)
-    cnffile = 'quickbb.cnf'
-    gen_cnf(cnffile,graph)
-    outp = run_quickbb(cnffile)
-    ordering = _get_ordering(str(outp))
-
-    expr.set_order(ordering)
-    tensors = expr.evaluate()
-    t_res = tensors[0].reorder_by_id([0]+list(range(-1,-n_qubits-1,-1)))
-    #print(t_res._tensor.round(4))
-
-    #amp = naive_eliminate(graph,tensors)
-    res_vec = tensor2vec(t_res._tensor[0])
-    f = 200
-    t = 230
-    print('me  ',str(np.array(res_vec[f:t]).round(2)))
-    print('me  ',len(res_vec))
-    print('cirq',state[f:t].round(2))
-    log.info('amp of |0> is'+str(amp))
-    #log.info("from cirq:"+str(target_amp))
-    print()
-def _get_ordering(out):
-    m = re.search(r'(?P<peo>(\d+ )+).*Treewidth=(?P<treewidth>\s\d+)',
-                  out, flags=re.MULTILINE | re.DOTALL )
-
-    peo = [int(ii) for ii in m['peo'].split()]
-    treewidth = int(m['treewidth'])
-    return peo
-
-def tensor2vec(tensor):
-    vec_len = 1
-    for d in  tensor.shape:
-        vec_len *= d
-    index_len = len(tensor.shape)
-    vec = []
-    idx = index_len-1
-    idx_vec = [0]*index_len
-    def get_subtensor_vec(tensor,vec,result):
-        if isinstance(tensor,np.ndarray):
-            for i in range(2):
-                get_subtensor_vec(tensor[i],vec,result)
-        else:
-            result.append(tensor)
-    res = []
-    get_subtensor_vec(tensor,idx_vec,res)
-    return res
-
-def get_by_idx_list(tensor,l):
-    if isinstance(tensor,np.ndarray):
-        if len(tensor.shape)==len(l):
-            return get_by_idx_list(tensor[l[0]],l[1:])
-        else:
-            raise Exception('wrong number of indexes',tensor.shape,l)
-    else:
-        return tensor
+def read_circuit_file(filename, max_depth=None):
+    log.info("reading file {}".format(filename))
+    circuit = Circuit()
+    with open(filename, "r") as fp:
+        qubit_count = int(fp.readline())
+        log.info("There should be {:d} qubits in circuit".format(qubit_count))
+        for line in fp:
+            m = re.search(r'(?P<layer>[0-9]+) (?=[a-z])', line)
+            if m is None:
+                raise Exception(
+                    "file format error at line {}".format(line))
+            op_str = line[m.end():]
+            op = OP.factory(op_str)
+            circuit.append(op)
+    if circuit.qubit_count!=qubit_count:
+        log.warn("Cirquit has {:d} qubits without any operator on them!"
+                 .format(qubit_count-circuit.qubit_count)
+                )
+    circuit.qubit_count = qubit_count
+    print(circuit.circuit)
+    return circuit
 
 if __name__=="__main__":
     main()
