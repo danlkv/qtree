@@ -113,10 +113,12 @@ class Simulator:
         if len(last_layer)!=qubit_count:
             log.warn("Last layer should contain an operator on each qubit")
             print(last_layer)
+        values_vars = [0,1,0,0]
         for op in last_layer:
             tensor = Tensor(op.tensor)
             # create a variable for each free qubit after the circuit
             xvar = Variable(-i)
+            xvar.fix(values_vars[i-1])
             vari.append(xvar)
             free_vars.append(xvar)
             tensor.add_variables(vari[variable_col[i-1]],xvar)

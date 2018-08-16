@@ -134,6 +134,10 @@ class Expression:
         if not free_vars:
             free_vars = self.free_vars
         log.info('Evaluating the expression: %s',str(self))
+        log.info('Slicing by fixed vars')
+        for t in self._tensors:
+            t.slice_if_fixed()
+        print('done')
         self.set_order_from_qbb(free_vars)
         # Iterate over only non-free vars
         vs = [v for v in self._variables if v not in free_vars]

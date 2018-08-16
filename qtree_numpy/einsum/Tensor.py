@@ -37,6 +37,30 @@ class Tensor():
         for v in self.variables:
             v.decrement()
 
+    def slice_if_fixed(self):
+        """If tensor contains a fixed variable transform it to
+        corresponding axis slice
+        ij->j (i=i_0)
+        """
+        new_vars = self.variables.copy()
+        new_idx = list(range(len(new_vars)))
+        i=0
+        for v in self.variables:
+            if v.fixed:
+                new_vars.remove(v)
+                new_idx.remove(i)
+                new_idx.insert(0,i)
+            i+=1
+        # make fixed variables corresponding first axis
+        self._tensor = self._tensor.transpose(new_idx)
+        for v in self.variables:
+            if v.fixed:
+                self._tensor = self._tensor[v.value]
+        print('oldv',self.variables)
+        print('nv',new_vars)
+        self.variables = new_vars
+        self.rank-=2
+        return self
     def add_variables(self,*vs):
         """Add variables to the tensor, update `self.rank`
         Increments `ref` of each variable

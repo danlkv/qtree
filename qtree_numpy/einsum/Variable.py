@@ -14,7 +14,12 @@ class Variable():
         self._space = space
         self.idx = self._id
         self._ref = 0
+        self.fixed = False
         var_count+=1
+    def fix(self, value):
+        """Fixes variable to a given value."""
+        self.fixed = True
+        self.value = value
     def merge_with(self, var):
         raise NotImplementedError()
         log.debug("merging variables",self,var)
