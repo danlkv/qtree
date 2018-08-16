@@ -20,6 +20,7 @@ class Variable():
         """Fixes variable to a given value."""
         self.fixed = True
         self.value = value
+        return self
     def merge_with(self, var):
         raise NotImplementedError()
         log.debug("merging variables",self,var)

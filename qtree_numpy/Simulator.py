@@ -46,7 +46,7 @@ class Simulator:
             print(tensors)
         t_res = tensors[0].reorder_by_id([0]+list(range(-1,-qubit_count-1,-1)))
         # TODO: use custom qubit order
-        return _tensor2vec(tensors[0]._tensor[0])
+        return _tensor2vec(tensors[0]._tensor)
 
     def build_expr(self,circuit):
         """ builds an Expression out of list of layers [operator,...]
@@ -57,7 +57,7 @@ class Simulator:
 
         # we start from 0 here to avoid problems with quickbb
         expr = Expression()
-        vari = [Variable(0)]
+        vari = [Variable(0).fix(0)]
         free_vars = [vari[0]]
 
         # Process first layer, connect Variable(0) to N variables

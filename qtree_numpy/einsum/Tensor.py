@@ -56,8 +56,6 @@ class Tensor():
         for v in self.variables:
             if v.fixed:
                 self._tensor = self._tensor[v.value]
-        print('oldv',self.variables)
-        print('nv',new_vars)
         self.variables = new_vars
         self.rank-=2
         return self
