@@ -5,6 +5,7 @@ log = get_logger()
 from qtree_numpy import Simulator, Circuit
 from qtree_numpy.operators import *
 from mpi4py import MPI
+import time
 
 
 OP = qOperation()
@@ -23,15 +24,19 @@ def start_simulation(circuit_file,target_state):
     circuit = read_circuit_file(circuit_file)
     cirq_circuit = circuit.convert_to_cirq()
     sim = Simulator()
+    start_time = time.time()
     final_state_qtree = sim.simulate(
         circuit,
         parallel=True,
         #graph_model_plot='gr.png'
     )
+    print("---qtree_%i--- %s seconds ---" % (rank,time.time() - start_time))
 
     if rank==0:
         cirq_sim = cirq.google.XmonSimulator()
+        start_time = time.time()
         cirq_result =cirq_sim.simulate(cirq_circuit)
+        print("---cirq--- %s seconds ---" % (time.time() - start_time))
         print(cirq_circuit)
         print("cirq ",cirq_result.final_state.round(4))
         print("qtree", final_state_qtree.round(4))
@@ -62,7 +67,7 @@ def read_circuit_file(filename, max_depth=None):
                  .format(qubit_count-circuit.qubit_count)
                 )
     circuit.qubit_count = qubit_count
-    print(circuit.circuit)
+    #print(circuit.circuit)
     return circuit
 
 if __name__=="__main__":

@@ -119,7 +119,8 @@ class Simulator:
         if len(last_layer)!=qubit_count:
             log.warn("Last layer should contain an operator on each qubit")
             print(last_layer)
-        values_vars = [0,1,0,0]
+        values_vars = [0]*np.power(2,qubit_count)
+        #values_vars = [0,1,0,0]
         for op in last_layer:
             tensor = Tensor(op.tensor)
             # create a variable for each free qubit after the circuit

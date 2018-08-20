@@ -2,6 +2,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 from mpi4py import MPI
+import time
 
 from .Variable import Variable
 from .Tensor import Tensor
@@ -166,9 +167,7 @@ class Expression:
                         x = x * t._tensor
                 else:
                     x=r[0]._tensor
-                print('x',x)
                 res+=x
-            print("res",res)
             return [Tensor(res)]
         else:
             res = self.evaluate(parallel=True)
@@ -197,7 +196,9 @@ class Expression:
             free_vars = self.free_vars
         log.info('Evaluating the expression: %s',str(self))
 
+        start_time = time.time()
         self.set_order_from_qbb(free_vars)
+        print("qbb-- %s seconds --" % (time.time() - start_time))
         if parallel:
             self.fix_vars_for_parallel()
         log.info('Slicing by fixed vars %s',[x for x in self._variables if x.fixed])
@@ -206,7 +207,6 @@ class Expression:
         log.info('Expression is now:%s',str(self))
         # Iterate over only non-free vars
         vs = [v for v in self._variables if v not in free_vars and v not in self.__paralleled_vars]
-        print('vs',self.__paralleled_vars)
         for var in vs:
             log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors
