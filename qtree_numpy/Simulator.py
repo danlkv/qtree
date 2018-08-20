@@ -18,7 +18,9 @@ class Simulator:
         self.num_threads = num_threads
         self.optimization = optimization
     def simulate(self,circuit,inital_state=None,
-                 graph_model_plot=None):
+                 graph_model_plot=None,
+                 parallel=False
+                ):
         """
         Simulate a cirquit
         :param circuit: a non-empty qtree.Circuit object
@@ -40,7 +42,7 @@ class Simulator:
         e =  self.build_expr(circuit.circuit)
         e.graph_model_plot = graph_model_plot
         # the result is tensor of rank len(free_variables) = 1+N
-        tensors = e.evaluate()
+        tensors = e.evaluate(parallel=parallel)
         if len(tensors)>1:
             log.warn('something went wrong. make sure graph is connected')
             print(tensors)

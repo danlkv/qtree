@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
+from mpi4py import MPI
 
 from .Variable import Variable
 from .Tensor import Tensor
@@ -95,6 +96,50 @@ class Expression:
             i+=1
         self._variables = sorted(
             self._variables, key=lambda v: v.idx)
+
+    def fix_vars_for_parallel(self):
+        comm = MPI.COMM_WORLD
+        nproc = comm.Get_size()
+        rank = comm.Get_rank()
+        print("RANK",rank)
+        for i in range(nproc):
+            if rank==i:
+                # Here we assume that every variable has 2 vals:0 and 1
+                # TODO: Support arbitary variable space size
+                # var count is minimum k so that 2^k>nproc
+                var_count=self._next_exp_of2(nproc)
+                leaf_count = np.power(2,var_count)
+                non_merged_leafs = nproc - ( leaf_count-nproc )
+                if rank<non_merged_leafs:
+                    val_str = bin(rank)[2:].zfill(var_count)
+                    print('rank, vstr',rank,val_str)
+                    values =[int(x) for x in val_str]
+                else:
+                    val_str = bin(rank+(rank-non_merged_leafs))[2:-1].zfill(var_count-1)
+
+                    print('rank, vstr',rank,val_str)
+                    values = [int(x) for x in val_str]
+                i,j=0,0
+                while i< (len(values)):
+                    v = self._variables[j]
+                    if not v.fixed:
+                        v.fix(values[i])
+                        i+=1
+                    j+=1
+                log.info('process with id %i evaluates with vals %s',
+                         rank,val_str)
+                self.__paralleled_vars = self._variables[var_count:]
+
+    def _next_exp_of2(self,n):
+        print('n',n)
+        n-=1
+        e = 0
+        while n>=1:
+            n/=2
+            e+=1
+        print('e',e)
+        return e
+
     def get_var_id(self,i):
         """Get Variables with given integer id
         returns all vars with var._id == i
@@ -113,7 +158,7 @@ class Expression:
                 res.append(v)
         return res
 
-    def evaluate(self,free_vars=None):
+    def evaluate(self,free_vars=None,parallel=False):
         """Evaluate the Expression by summing over non-free vars
         Uses variable elimination algorithm.
         Mutates the instance: removes all variables except free
@@ -134,14 +179,16 @@ class Expression:
         if not free_vars:
             free_vars = self.free_vars
         log.info('Evaluating the expression: %s',str(self))
-        log.info('Slicing by fixed vars')
-        for t in self._tensors:
-            t.slice_if_fixed()
 
         log.info('Expression is now:%s',str(self))
         self.set_order_from_qbb(free_vars)
+        if parallel:
+            self.fix_vars_for_parallel()
+        log.info('Slicing by fixed vars %s',[x for x in self._variables if x.fixed])
+        for t in self._tensors:
+            t.slice_if_fixed()
         # Iterate over only non-free vars
-        vs = [v for v in self._variables if v not in free_vars]
+        vs = [v for v in self._variables if v not in free_vars and v not in self.__paralleled_vars]
         for var in vs:
             log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors

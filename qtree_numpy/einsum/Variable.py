@@ -35,5 +35,8 @@ class Variable():
     def decrement(self):
         self._ref-=1
     def __repr__(s):
-        return "_v%s"%(s._id)
+        if not s.fixed:
+            return "_v%s"%(s._id)
+        else:
+            return "_v%sf%s"%(s._id,s.value)
         return "_v%s @%s<-%s"%(s._id,s.idx,s._ref)

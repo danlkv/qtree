@@ -17,16 +17,17 @@ def main():
 
 def start_simulation(circuit_file,target_state):
     circuit = read_circuit_file(circuit_file)
+    cirq_circuit = circuit.convert_to_cirq()
     sim = Simulator()
     final_state_qtree = sim.simulate(
         circuit,
+        parallel=True,
         #graph_model_plot='gr.png'
     )
 
     cirq_sim = cirq.google.XmonSimulator()
-    cirq_circuit = circuit.convert_to_cirq()
-    print(cirq_circuit)
     cirq_result =cirq_sim.simulate(cirq_circuit)
+    print(cirq_circuit)
     print("cirq ",cirq_result.final_state.round(4))
     print("qtree", final_state_qtree.round(4))
 
