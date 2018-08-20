@@ -42,13 +42,17 @@ class Simulator:
         e =  self.build_expr(circuit.circuit)
         e.graph_model_plot = graph_model_plot
         # the result is tensor of rank len(free_variables) = 1+N
-        tensors = e.evaluate(parallel=parallel)
-        if len(tensors)>1:
-            log.warn('something went wrong. make sure graph is connected')
-            print(tensors)
-        t_res = tensors[0].reorder_by_id([0]+list(range(-1,-qubit_count-1,-1)))
-        # TODO: use custom qubit order
-        return _tensor2vec(tensors[0]._tensor)
+        if parallel:
+            tensors=e.parallel_evaluate()
+        else:
+            tensors = e.evaluate()
+        if tensors:
+            if len(tensors)>1:
+                log.warn('something went wrong. make sure graph is connected')
+                print(tensors)
+            t_res = tensors[0].reorder_by_id([0]+list(range(-1,-qubit_count-1,-1)))
+            # TODO: use custom qubit order
+            return _tensor2vec(tensors[0]._tensor)
 
     def build_expr(self,circuit):
         """ builds an Expression out of list of layers [operator,...]
