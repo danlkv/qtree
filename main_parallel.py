@@ -24,13 +24,12 @@ def start_simulation(circuit_file,target_state):
     circuit = read_circuit_file(circuit_file)
     cirq_circuit = circuit.convert_to_cirq()
     sim = Simulator()
-    start_time = time.time()
     final_state_qtree = sim.simulate(
         circuit,
         parallel=True,
         #graph_model_plot='gr.png'
     )
-    print("---qtree_%i--- %s seconds ---" % (rank,time.time() - start_time))
+    #print("---qtree_%i--- %s seconds ---" % (rank,time.time() - start_time))
 
     if rank==0:
         cirq_sim = cirq.google.XmonSimulator()

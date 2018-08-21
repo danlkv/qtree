@@ -148,14 +148,35 @@ class Expression:
             if v._id==i:
                 res.append(v)
         return res
+
     def parallel_evaluate(self):
         comm = MPI.COMM_WORLD
         nproc = comm.Get_size()
         rank = comm.Get_rank()
         log.info('Evaluating the expression: %s',str(self))
         if rank==0:
-            res0 = self.evaluate(parallel=True)
-            results = [res0]
+            free_vars = self.free_vars
+            start_time = time.time()
+            self.set_order_from_qbb(free_vars)
+            print("qbb-- %s seconds --" % (time.time() - start_time))
+            ordering = comm.bcast(self.ordering,root=0)
+        else:
+            ordering=None
+            ordering = comm.bcast(ordering,root=0)
+            self.set_order(ordering)
+            print('rank got order',rank,ordering)
+
+        start_time = time.time()
+        log.info('Slicing by fixed vars %s',[x for x in self._variables if x.fixed])
+        self.fix_vars_for_parallel()
+        for t in self._tensors:
+            t.slice_if_fixed()
+        log.info('Expression is now:%s',str(self))
+        # Iterate over only non-free vars
+        vs = [v for v in self._variables if not v.fixed]
+        res = self._variable_eliminate(vs)
+        if rank==0:
+            results = [res]
             for i in range(1,nproc):
                 results.append(comm.recv(source=i,tag=42))
             print('results', results)
@@ -170,8 +191,8 @@ class Expression:
                 res+=x
             return [Tensor(res)]
         else:
-            res = self.evaluate(parallel=True)
             req = comm.send(res ,dest=0,tag=42)
+        print("eval%s--- %s seconds --" % (rank,time.time() - start_time))
 
 
     def evaluate(self,free_vars=None,parallel=False):
@@ -199,14 +220,15 @@ class Expression:
         start_time = time.time()
         self.set_order_from_qbb(free_vars)
         print("qbb-- %s seconds --" % (time.time() - start_time))
-        if parallel:
-            self.fix_vars_for_parallel()
         log.info('Slicing by fixed vars %s',[x for x in self._variables if x.fixed])
         for t in self._tensors:
             t.slice_if_fixed()
         log.info('Expression is now:%s',str(self))
         # Iterate over only non-free vars
-        vs = [v for v in self._variables if v not in free_vars and v not in self.__paralleled_vars]
+        vs = [v for v in self._variables if not v.fixed]
+        return self._variable_eliminate(vs)
+
+    def _variable_eliminate(self,vs):
         for var in vs:
             log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors
@@ -231,6 +253,7 @@ class Expression:
             self._tensors = new_expr_tensors
             self._tensors.append(new_t)
         return self._tensors
+
     def __repr__(self):
         return ' '.join([str(t) for t in self._tensors])
 
