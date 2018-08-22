@@ -44,20 +44,22 @@ class Tensor():
         """
         new_vars = self.variables.copy()
         new_idx = list(range(len(new_vars)))
-        i=0
+        i,has_fixed=0,False
         for v in self.variables:
             if v.fixed:
+                has_fixed=True
                 new_vars.remove(v)
                 new_idx.remove(i)
                 new_idx.insert(0,i)
+                self.rank-=1
             i+=1
         # make fixed variables corresponding first axis
-        self._tensor = self._tensor.transpose(new_idx)
-        for v in self.variables:
-            if v.fixed:
-                self._tensor = self._tensor[v.value]
-        self.variables = new_vars
-        self.rank-=2
+        if has_fixed:
+            self._tensor = self._tensor.transpose(new_idx)
+            for v in self.variables:
+                if v.fixed:
+                    self._tensor = self._tensor[v.value]
+            self.variables = new_vars
         return self
     def add_variables(self,*vs):
         """Add variables to the tensor, update `self.rank`
@@ -89,6 +91,7 @@ class Tensor():
             raise Exception("expexted Variable got",v)
         self._tensor = np.sum(self._tensor,axis=axis)
         self.variables.remove(v)
+        self.rank-=1
         return self
 
     def merge_with(self,tensors):
@@ -156,7 +159,7 @@ class Tensor():
         i = 0
         while True:
             try:
-                v = l[i]
+                v = self.variables[i]
             except IndexError:
                 break
             dup = duplicates(l,v)
@@ -167,8 +170,9 @@ class Tensor():
                     axis1=dup[0],
                     axis2=dup[1]
                 )
-                l = [x for i,x in enumerate(l) if x!=v]
+                l = [x for x in l if x!=v]
                 l += [v]
+                self.rank-=len(dup)-1
             i+=1
         self.variables = l
 
@@ -185,4 +189,4 @@ class Tensor():
         else:
             s = self._tensor.shape
             r = len(s)
-            return f"<tensor with shape {s} and rank {r}\nvars: "+str(self.variables)+f"({len(self.variables)})>"
+            return f"<tensor with shape {s} and rank {r}\nvars: "+str(self.variables)+f"({self.rank})>"

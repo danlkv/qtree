@@ -21,8 +21,12 @@ def start_simulation(circuit_file,target_state):
     comm = MPI.COMM_WORLD
     nproc = comm.Get_size()
     rank = comm.Get_rank()
-    circuit = read_circuit_file(circuit_file)
-    cirq_circuit = circuit.convert_to_cirq()
+    if rank==0:
+        circuit = read_circuit_file(circuit_file)
+        comm.bcast(circuit)
+    else:
+        circuit=None
+        circuit=comm.bcast(circuit,root=0)
     sim = Simulator()
     final_state_qtree = sim.simulate(
         circuit,
@@ -33,10 +37,11 @@ def start_simulation(circuit_file,target_state):
 
     if rank==0:
         cirq_sim = cirq.google.XmonSimulator()
+        cirq_circuit = circuit.convert_to_cirq()
         start_time = time.time()
         cirq_result =cirq_sim.simulate(cirq_circuit)
         print("---cirq--- %s seconds ---" % (time.time() - start_time))
-        print(cirq_circuit)
+        # print(cirq_circuit)
         print("cirq ",cirq_result.final_state.round(4))
         print("qtree", final_state_qtree.round(4))
 

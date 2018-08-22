@@ -40,10 +40,10 @@ class qOperation:
                 "Wrong number of qubits: {}, required: {}".format(
                     len(qubits), self.n_qubit))
 
-    def to_cirq_2d_circ_op(self, side_length):
+    def to_cirq_2d_circ_op(self,dim1,dim2):
         return self.cirq_op(
             *[cirq.GridQubit(*np.unravel_index(
-                qubit, [side_length, side_length]))
+                qubit, [dim1, dim2]))
               for qubit in self._qubits]
         )
 

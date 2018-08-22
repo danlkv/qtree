@@ -24,10 +24,15 @@ class Circuit:
         self.circuit[self.layer_idx].append(op)
 
     def convert_to_cirq(self):
-        side_length = int(np.sqrt(self.qubit_count))
         cirq_circuit = cirq.Circuit()
+        isroot = lambda x: int(np.sqrt(x))==np.sqrt(x)
+        side_length = int(np.sqrt(self.qubit_count))
+        if isroot(self.qubit_count):
+            dim1,dim2 = side_length,side_length
+        else:
+            dim1,dim2 = side_length,side_length+1
         for layer in self.circuit:
-            cirq_circuit.append(op.to_cirq_2d_circ_op(side_length) for op in layer)
+            cirq_circuit.append(op.to_cirq_2d_circ_op(dim1,dim2) for op in layer)
         return cirq_circuit
 
     def next_layer(self):
