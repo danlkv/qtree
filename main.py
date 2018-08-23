@@ -21,8 +21,8 @@ def start_simulation(circuit_file,target_state):
     sim = Simulator()
     final_state_qtree = sim.simulate(
         circuit,
-        parallel=True,
-        #graph_model_plot='gr.png'
+        #parallel=True,
+        graph_model_plot='gr.png'
     )
 
     cirq_sim = cirq.google.XmonSimulator()

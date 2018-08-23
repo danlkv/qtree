@@ -70,13 +70,16 @@ class Expression:
         graph = self._graph
         graph.remove_nodes_from([ v._id for v in self._variables if v.fixed])
         if self.graph_model_plot:
-            plt.figure(figsize=(10,10))
-            nx.draw(graph,with_labels=True)
-            plt.savefig(self.graph_model_plot)
+            self.__draw_graph(self.graph_model_plot)
         qbb.gen_cnf(cnffile,graph)
         ordering = qbb.run_quickbb(cnffile)
         print("Ordering from QuickBB is",ordering)
         self.set_order(ordering)
+
+    def __draw_graph(self,path):
+        plt.figure(figsize=(10,10))
+        nx.draw(self._graph,with_labels=True)
+        plt.savefig(path)
 
     def set_order(self,order):
         """Set order of elimination.
@@ -95,26 +98,20 @@ class Expression:
             self._variables, key=lambda v: v.idx)
 
     def fix_vars_for_parallel(self,rank,nproc):
-        for i in range(nproc):
-            if rank==i:
-                # Here we assume that every variable has 2 vals:0 and 1
-                # TODO: Support arbitary variable space size
-                # var count is minimum k so that 2^k>nproc
-                values = self.__get_values_for_fix(rank,nproc)
-                variables = self.__get_variables_for_fix(nproc)
-                self.__paralleled_vars = variables
-                i,j=0,0
-                while i<len(values):
-                    v = variables[i]
-                    if not v.fixed:
-                        v.fix(values[i])
-                        i+=1
-                    j+=1
-                log.info('process with id %i evaluates with vals %s',
-                         rank,values)
+        # Here we assume that every variable has 2 vals:0 and 1
+        # TODO: Support arbitary variable space size
+        # var count is minimum k so that 2^k>nproc
+        values = self.__get_values_for_fix(rank,nproc)
+        variables = self.__paralleled_vars
+        print(rank,'vals vars',values,variables)
+        for i in range(len(values)):
+            variables[i].fix(values[i])
+        log.info('process with id %i evaluates with vals %s',
+                 rank,values)
+        self.__paralleled_vars = self.__paralleled_vars[:len(values)]
         print('parallised vars',self.__paralleled_vars)
 
-    def __get_variables_for_fix(self,nproc):
+    def _get_ids_for_fix(self,nproc):
         var_count=_next_exp_of2(nproc)
         opt = GreedyOptimiser(num_items=var_count)
         self._graph.remove_nodes_from([ v._id for v in self._variables if v.fixed])
@@ -129,7 +126,7 @@ class Expression:
         nodes = opt.optimise(list(self._graph.nodes()),cost_func)
         print(opt.process)
         print('greeder returned',nodes)
-        return [v for v in self._variables if v._id in nodes]
+        return nodes
 
     def __get_values_for_fix(self,rank,nproc):
         """
@@ -174,12 +171,19 @@ class Expression:
             self.set_order_from_qbb()
             print("qbb-- %s seconds --" % (time.time() - start_time))
             ordering = comm.bcast(self.ordering,root=0)
+            nodes = self._get_ids_for_fix(nproc)
+            self.__paralleled_vars = [v for v in self._variables if v._id in nodes]
+            parv = comm.bcast(nodes,root=0)
         else:
             ordering=None
             ordering = comm.bcast(ordering,root=0)
             self.set_order(ordering)
+            nodes= None
+            nodes= comm.bcast(nodes,root=0)
+            self.__paralleled_vars = [v for v in self._variables if v._id in nodes]
         self.fix_vars_for_parallel(rank,nproc)
         start_time = time.time()
+        print('fixed',[v for v in self._variables if v.fixed])
         for t in self._tensors:
             t.slice_if_fixed()
         log.info('Expression is now:%s',str(self))
@@ -189,7 +193,9 @@ class Expression:
         if rank==0:
             results = [res]
             for i in range(1,nproc):
-                results.append(comm.recv(source=i,tag=42))
+                res_ = comm.recv(source=i,tag=42)
+                print('received result ',i,res_)
+                results.append(res_)
             print('results', results)
             res = sum([r[0]._tensor for r in results])
         else:
