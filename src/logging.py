@@ -1,7 +1,7 @@
 import logging
 def get_logger():
     log = logging.getLogger('qtree')
-    log.setLevel(logging.DEBUG)
+    log.setLevel(logging.INFO)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)

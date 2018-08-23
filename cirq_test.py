@@ -22,7 +22,7 @@ def read_circuit_file(filename, max_depth=None):
         for line in fp:
             m = re.search(r'(?P<layer>[0-9]+) (?=[a-z])', line)
             if m is None:
-                raise Exception("file format error at line {}".format(idx))
+                raise Exception("file format error at line {}".format(line))
             # Read circuit layer by layer
             layer_num = int(m.group('layer'))
 
