@@ -31,7 +31,7 @@ def start_simulation(circuit_file,target_state):
     final_state_qtree = sim.simulate(
         circuit,
         parallel=True,
-        #graph_model_plot='gr.png'
+        graph_model_plot='gr.png'
     )
     #print("---qtree_%i--- %s seconds ---" % (rank,time.time() - start_time))
 

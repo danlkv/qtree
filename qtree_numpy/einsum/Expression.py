@@ -6,6 +6,7 @@ import time
 
 from .Variable import Variable
 from .Tensor import Tensor
+from .Optimiser import GreedyOptimiser
 from . import quickbb_api as qbb
 import logging
 log = logging.getLogger('qtree')
@@ -100,18 +101,35 @@ class Expression:
                 # TODO: Support arbitary variable space size
                 # var count is minimum k so that 2^k>nproc
                 values = self.__get_values_for_fix(rank,nproc)
-                self.__paralleled_vars = []
+                variables = self.__get_variables_for_fix(nproc)
+                self.__paralleled_vars = variables
                 i,j=0,0
                 while i<len(values):
-                    v = self._variables[j]
+                    v = variables[i]
                     if not v.fixed:
-                        self.__paralleled_vars.append(v)
                         v.fix(values[i])
                         i+=1
                     j+=1
                 log.info('process with id %i evaluates with vals %s',
                          rank,values)
         print('parallised vars',self.__paralleled_vars)
+
+    def __get_variables_for_fix(self,nproc):
+        var_count=_next_exp_of2(nproc)
+        opt = GreedyOptimiser(num_items=var_count)
+        self._graph.remove_nodes_from([ v._id for v in self._variables if v.fixed])
+        def cost_func(nodes):
+            g = self._graph
+            cost = 0
+            for n in g.nodes():
+                for _n in g.neighbors(n):
+                    if _n not in nodes:
+                        cost+=1
+            return cost
+        nodes = opt.optimise(list(self._graph.nodes()),cost_func)
+        print(opt.process)
+        print('greeder returned',nodes)
+        return [v for v in self._variables if v._id in nodes]
 
     def __get_values_for_fix(self,rank,nproc):
         """
@@ -160,8 +178,8 @@ class Expression:
             ordering=None
             ordering = comm.bcast(ordering,root=0)
             self.set_order(ordering)
-        start_time = time.time()
         self.fix_vars_for_parallel(rank,nproc)
+        start_time = time.time()
         for t in self._tensors:
             t.slice_if_fixed()
         log.info('Expression is now:%s',str(self))
@@ -210,6 +228,7 @@ class Expression:
         return r
 
     def _variable_eliminate(self,vs):
+        tensor_sizes = []
         for var in vs:
             log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors
@@ -218,21 +237,13 @@ class Expression:
                      var,len(tensors_of_var),
                     str([t.rank for t in tensors_of_var]),
                     )
-            sh = [len(t._tensor.shape) for t in tensors_of_var]
-            rn = [(t.rank) for t in tensors_of_var]
-            if sh!=rn:
-                log.warn("WARINING %s %s",sh,rn)
-            log.debug('tensors of var: \n%s',
-                  tensors_of_var,
-                 )
+            log.debug('tensors of var: \n%s', tensors_of_var)
             tensor_of_var = tensors_of_var[0].merge_with(
                 tensors_of_var[1:])
             #tensor_of_var.diagonalize_if_dupl()
             new_t = tensor_of_var.sum_by(var)
+            tensor_sizes.append(new_t.rank)
             log.debug('tensor after sum:\n%s',new_t)
-            sh = len(new_t._tensor.shape)
-            if sh!=new_t.rank:
-                log.warn("WARINING %s %s",sh,rn)
             new_expr_tensors = []
             for t in self._tensors:
                 if t not in tensors_of_var:
@@ -247,6 +258,8 @@ class Expression:
                 x*=t._tensor
                 # TODO: check the rank here, if >0 then something went wrong
             self._tensors=[Tensor(x)]
+        print("DONE varelim max ts:",max(tensor_sizes))
+        print("sum ts",sum(tensor_sizes))
         return self._tensors
 
     def __repr__(self):
