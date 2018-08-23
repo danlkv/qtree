@@ -4,7 +4,7 @@ from pycallgraph import Config
 from pycallgraph import GlobbingFilter
 from pycallgraph.output import GraphvizOutput
 
-from main import main
+from main_parallel import main
 
 config = Config()
 config.trace_filter = GlobbingFilter(include=[
