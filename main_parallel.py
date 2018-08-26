@@ -17,7 +17,9 @@ def main():
     args = parser.parse_args()
     start_simulation(args.circuitfile,args.target_state)
 
-def start_simulation(circuit_file,target_state):
+def start_simulation(circuit_file,
+                     target_state=None,
+                     run_cirq=True):
     comm = MPI.COMM_WORLD
     nproc = comm.Get_size()
     rank = comm.Get_rank()
@@ -31,19 +33,21 @@ def start_simulation(circuit_file,target_state):
     final_state_qtree = sim.simulate(
         circuit,
         parallel=True,
-        graph_model_plot='gr.png'
+        save_graphs = False,
     )
+    return sim.eval_time
     #print("---qtree_%i--- %s seconds ---" % (rank,time.time() - start_time))
 
     if rank==0:
-        cirq_sim = cirq.google.XmonSimulator()
-        cirq_circuit = circuit.convert_to_cirq()
-        start_time = time.time()
-        cirq_result =cirq_sim.simulate(cirq_circuit)
-        print("---cirq--- %s seconds ---" % (time.time() - start_time))
-        # print(cirq_circuit)
-        print("cirq ",cirq_result.final_state.round(4))
         print("qtree", final_state_qtree.round(4))
+        if run_cirq:
+            cirq_sim = cirq.google.XmonSimulator()
+            cirq_circuit = circuit.convert_to_cirq()
+            start_time = time.time()
+            cirq_result =cirq_sim.simulate(cirq_circuit)
+            print("---cirq--- %s seconds ---" % (time.time() - start_time))
+            # print(cirq_circuit)
+            print("cirq ",cirq_result.final_state.round(4))
 
 def read_circuit_file(filename, max_depth=None):
     log.info("reading file {}".format(filename))

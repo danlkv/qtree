@@ -18,8 +18,8 @@ class Simulator:
         self.num_threads = num_threads
         self.optimization = optimization
     def simulate(self,circuit,inital_state=None,
-                 graph_model_plot=None,
-                 parallel=False
+                 parallel = False,
+                 **params
                 ):
         """
         Simulate a cirquit
@@ -39,13 +39,14 @@ class Simulator:
             inital_state[0] = 1.+0j
         self.__check_inital_state_length(qubit_count,inital_state)
 
-        e =  self.build_expr(circuit.circuit)
-        e.graph_model_plot = graph_model_plot
+        e =  self.build_expr(circuit.circuit,params)
         # the result is tensor of rank len(free_variables) = 1+N
         if parallel:
             tensors=e.parallel_evaluate()
         else:
             tensors = e.evaluate()
+        self.eval_time = e.eval_time
+        print("sim",self.eval_time)
         if tensors:
             if len(tensors)>1:
                 log.warn('something went wrong. make sure graph is connected')
@@ -54,7 +55,7 @@ class Simulator:
             # TODO: use custom qubit order
             return _tensor2vec(tensors[0]._tensor)
 
-    def build_expr(self,circuit):
+    def build_expr(self,circuit,params):
         """ builds an Expression out of list of layers [operator,...]
         :param curcuit: list of qOperation lists with first and last
         layer of hadamards on each
@@ -62,7 +63,7 @@ class Simulator:
         #circuit.reverse()
 
         # we start from 0 here to avoid problems with quickbb
-        expr = Expression()
+        expr = Expression(**params)
         vari = [Variable(0).fix(0)]
         free_vars = [vari[0]]
 

@@ -52,6 +52,7 @@ def _get_ordering(out):
     m = re.search(b'(?P<peo>(\d+ )+).*Treewidth=(?P<treewidth>\s\d+)',
                   out, flags=re.MULTILINE | re.DOTALL )
 
+    print("OUTQBB:",out)
     peo = [int(ii) for ii in m['peo'].split()]
     treewidth = int(m['treewidth'])
     return peo

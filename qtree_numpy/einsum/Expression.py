@@ -3,6 +3,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 from mpi4py import MPI
 import time
+import matplotlib.pyplot as plt
 
 from .Variable import Variable
 from .Tensor import Tensor
@@ -12,7 +13,9 @@ import logging
 log = logging.getLogger('qtree')
 
 class Expression:
-    def __init__(self,graph_model_plot=None):
+    def __init__(self,
+                 graph_model_plot=None,
+                 save_graphs=False):
         """Set Expression parameters and
         set empty lists for tensors and vars.
 
@@ -22,9 +25,11 @@ class Expression:
             a path to file where to save a plot of graphical model
         """
         self.graph_model_plot=graph_model_plot
+        self.save_graphs = save_graphs
         self._tensors = []
         self._variables = []
         self._graph = nx.Graph()
+        self._graph_layout =None
 
     def __iadd__(self,tensor):
         """Append a tensor to Expression and add it's Variables
@@ -48,8 +53,12 @@ class Expression:
                 tensor.variables[0]._id,
                 tensor.variables[1]._id)
         elif len(tensor.variables)>2:
+            vs = [ v._id for v in tensor.variables]
+            pairs = [(vs[i],vs[j]) for i in range(len(vs)) for j in range(i)]
+            #print(vs,pairs)
+            self._graph.add_edges_from(pairs)
             # TODO make it work for more than 2 variables
-            raise Exception('found a tensor with more than 2 vars.')
+            #raise Exception('found a tensor with more than 2 vars.')
 
     def set_tensors(self,tensors):
         """A wrapper of `__iadd__()` for adding list of tensors
@@ -77,8 +86,19 @@ class Expression:
         self.set_order(ordering)
 
     def __draw_graph(self,path):
+        if not self._graph_layout:
+            self._graph_layout = nx.spectral_layout(self._graph)
+            print (self._graph_layout)
+        ids = [v._id for v in self._variables]
+        layout = {i:pos for i,pos in self._graph_layout.items() if i in ids}
         plt.figure(figsize=(10,10))
-        nx.draw(self._graph,with_labels=True)
+        nx.draw(self._graph,
+                pos=layout,
+                node_color=np.array(list(self._graph.nodes())),
+                node_size=400,
+                cmap=plt.cm.Blues,
+                with_labels=True,
+               )
         plt.savefig(path)
 
     def set_order(self,order):
@@ -103,7 +123,6 @@ class Expression:
         # var count is minimum k so that 2^k>nproc
         values = self.__get_values_for_fix(rank,nproc)
         variables = self.__paralleled_vars
-        print(rank,'vals vars',values,variables)
         for i in range(len(values)):
             variables[i].fix(values[i])
         log.info('process with id %i evaluates with vals %s',
@@ -183,7 +202,6 @@ class Expression:
             self.__paralleled_vars = [v for v in self._variables if v._id in nodes]
         self.fix_vars_for_parallel(rank,nproc)
         start_time = time.time()
-        print('fixed',[v for v in self._variables if v.fixed])
         for t in self._tensors:
             t.slice_if_fixed()
         log.info('Expression is now:%s',str(self))
@@ -194,13 +212,14 @@ class Expression:
             results = [res]
             for i in range(1,nproc):
                 res_ = comm.recv(source=i,tag=42)
-                print('received result ',i,res_)
+                log.debug('received result ',i,res_)
                 results.append(res_)
-            print('results', results)
+            log.info('results', results)
             res = sum([r[0]._tensor for r in results])
         else:
             req = comm.send(res ,dest=0,tag=42)
-        print("eval%s--- %s seconds --" % (rank,time.time() - start_time))
+        self.eval_time = time.time() - start_time
+        print("eval%s--- %s seconds --" % (rank,self.eval_time))
         if rank==0:
             return [Tensor(res)]
 
@@ -230,7 +249,8 @@ class Expression:
         vs = [v for v in self._variables if not v.fixed]
         start_time = time.time()
         r = self._variable_eliminate(vs)
-        print("Eval time-- %s seconds --" % (time.time() - start_time))
+        self.eval_time = time.time() - start_time
+        print("Eval time-- %s seconds --" % (self.eval_time))
         return r
 
     def _variable_eliminate(self,vs):
@@ -239,8 +259,8 @@ class Expression:
             log.debug('expr %s',self)
             tensors_of_var = [t for t in self._tensors
                               if var in t.variables]
-            log.info('Eliminating %s \twith %i tensors, ranks:%s',
-                     var,len(tensors_of_var),
+            log.info('Eliminating %s %i \twith %i tensors, ranks:%s',
+                     var,var.idx,len(tensors_of_var),
                     str([t.rank for t in tensors_of_var]),
                     )
             log.debug('tensors of var: \n%s', tensors_of_var)
@@ -258,6 +278,10 @@ class Expression:
                     del t
             self._tensors = new_expr_tensors
             self._tensors.append(new_t)
+            self._graph.remove_nodes_from([var._id])
+            self.__update_graph(new_t)
+            if self.save_graphs :
+                self.__draw_graph('./graphs/graph_%i.png'%var.idx)
         if len(self._tensors)>1:
             x = 1
             for t in self._tensors:
