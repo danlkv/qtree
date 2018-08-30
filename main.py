@@ -10,26 +10,31 @@ OP = qOperation()
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('circuitfile', help='file with circuit')
-    parser.add_argument('target_state',
-                        help='state x against which amplitude is computed')
+    #parser.add_argument('target_state',
+                        #help='state x against which amplitude is computed')
     args = parser.parse_args()
-    start_simulation(args.circuitfile,args.target_state)
+    start_simulation(args.circuitfile)
 
-def start_simulation(circuit_file,target_state):
+def start_simulation(circuit_file,
+                     target_state=None,
+                     run_cirq=True):
     circuit = read_circuit_file(circuit_file)
     cirq_circuit = circuit.convert_to_cirq()
     sim = Simulator()
     final_state_qtree = sim.simulate(
         circuit,
         #parallel=True,
-        graph_model_plot='gr.png'
+        #graph_model_plot='gr.png'
+        save_graphs = False,
     )
 
-    cirq_sim = cirq.google.XmonSimulator()
-    cirq_result =cirq_sim.simulate(cirq_circuit)
-    print(cirq_circuit)
-    print("cirq ",cirq_result.final_state.round(4))
+    if run_cirq:
+        cirq_sim = cirq.google.XmonSimulator()
+        cirq_result =cirq_sim.simulate(cirq_circuit)
+        print(cirq_circuit)
+        print("cirq ",cirq_result.final_state.round(4))
     print("qtree", final_state_qtree.round(4))
+    return sim.eval_time
 
 def read_circuit_file(filename, max_depth=None):
     log.info("reading file {}".format(filename))
