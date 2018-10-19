@@ -964,15 +964,15 @@ if __name__ == "__main__":
     #                 timing_fn=time_single_amplitude_np)
     # collect_timings('test_tf.p', [4, 5], list(range(10, 21)),
     #                 timing_fn=time_single_amplitude_tf)
-    collect_timings_mpi('hachiko_np.p', [5], list(range(10, 44)),
-                        timing_fn_mpi=time_single_amplitude_np_mpi,
-                        n_var_parallel_min=0, n_var_parallel_max=1)
-    collect_timings_mpi('hachiko_np.p', [6], list(range(10, 35)),
-                        timing_fn_mpi=time_single_amplitude_np_mpi,
-                        n_var_parallel_min=0, n_var_parallel_max=1)
-    collect_timings_mpi('hachiko_np.p', [7], list(range(10, 32)),
-                        timing_fn_mpi=time_single_amplitude_np_mpi,
-                        n_var_parallel_min=0, n_var_parallel_max=1)
+    # collect_timings_mpi('hachiko_np.p', [5], list(range(10, 44)),
+    #                     timing_fn_mpi=time_single_amplitude_np_mpi,
+    #                     n_var_parallel_min=0, n_var_parallel_max=1)
+    # collect_timings_mpi('hachiko_np.p', [6], list(range(10, 35)),
+    #                     timing_fn_mpi=time_single_amplitude_np_mpi,
+    #                     n_var_parallel_min=0, n_var_parallel_max=1)
+    # collect_timings_mpi('hachiko_np.p', [7], list(range(10, 32)),
+    #                     timing_fn_mpi=time_single_amplitude_np_mpi,
+    #                     n_var_parallel_min=0, n_var_parallel_max=1)
     collect_timings_mpi('hachiko_np.p', [8], list(range(10, 29)),
                         timing_fn_mpi=time_single_amplitude_np_mpi,
                         n_var_parallel_min=0, n_var_parallel_max=1)
