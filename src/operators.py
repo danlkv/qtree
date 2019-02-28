@@ -35,7 +35,7 @@ class qOperation:
     def _create_from_string(sefl, s):
         # log.debug("creating op from '{}'".format(s))
         m = re.search(
-            r'(?P<operation>h|t|cz|x_1_2|y_1_2) (?P<qubit1>[0-9]+) ?(?P<qubit2>[0-9]+)?', s)
+            r'(?P<operation>h|t|cz|x_1_2|y_1_2|x|y) (?P<qubit1>[0-9]+) ?(?P<qubit2>[0-9]+)?', s)
         if m is None:
             raise Exception("file format error in {}".format(s))
         op_identif = m.group('operation')
@@ -55,6 +55,10 @@ class qOperation:
             return X_1_2(q_idx)
         if op_identif == 'y_1_2':
             return Y_1_2(q_idx)
+        if op_identif == 'x':
+            return X(q_idx)
+        if op_identif == 'y':
+            return Y(q_idx)
 
     def _check_qubit_count(self, qubits):
         if len(qubits) != self.n_qubit:
@@ -189,12 +193,18 @@ class X(qOperation):
 
 
 class Y(qOperation):
-    matrix = np.array([[0.-1j, 0.+0j],
-                       [0.+0j, 0.+1j]],
+    matrix = np.array([[0.+0j, 0.-1j],
+                       [0.+1j, 0.+0j]],
                       dtype=defs.NP_ARRAY_TYPE)
     name = 'y'
     diagonal = False
     n_qubit = 1
+
+    def cirq_op(self, x): return cirq.Y(x)
+
+    def __init__(self, *qubits):
+        self._check_qubit_count(qubits)
+        self._qubits = qubits
 
 
 def read_circuit_file(filename, max_depth=None):
@@ -262,5 +272,7 @@ operator_matrices_dict = {
     'x_1_2': X_1_2(1).matrix,
     'y_1_2': Y_1_2(1).matrix,
     't': np.diag(T(1).matrix),
-    'cz': np.diag(cZ(1, 1).matrix).reshape([2, 2])
+    'cz': np.diag(cZ(1, 1).matrix).reshape([2, 2]),
+    'x': X(1).matrix,
+    'y': Y(1).matrix
 }

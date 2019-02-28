@@ -41,9 +41,11 @@ def get_tf_buckets(buckets, qubit_count):
     H = tf.placeholder(tf.complex64, [2, 2], 'h')
     cZ = tf.placeholder(tf.complex64, [2, 2], 'cz')
     T = tf.placeholder(tf.complex64, [2], 't')
+    X = tf.placeholder(tf.complex64, [2, 2], 'x')
+    Y = tf.placeholder(tf.complex64, [2, 2], 'y')
 
     placeholder_dict = {'x_1_2': X_1_2, 'y_1_2': Y_1_2,
-                        'h': H, 'cz': cZ, 't': T}
+                        'h': H, 'cz': cZ, 't': T, 'x': X, 'y': Y}
 
     # Add input vectors
     input_names = ['I{}'.format(ii)

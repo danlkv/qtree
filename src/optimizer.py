@@ -64,7 +64,7 @@ def read_buckets(filename, free_qubits=[], max_depth=None):
         for idx, line in enumerate(fp):
 
             # Read circuit layer by layer. Decipher contents of the line
-            m = re.search(r'(?P<layer>[0-9]+) (?P<operation>h|t|cz|x_1_2|y_1_2) (?P<qubit1>[0-9]+) ?(?P<qubit2>[0-9]+)?', line)
+            m = re.search(r'(?P<layer>[0-9]+) (?P<operation>h|t|cz|x_1_2|y_1_2|x|y) (?P<qubit1>[0-9]+) ?(?P<qubit2>[0-9]+)?', line)
             if m is None:
                 raise Exception("file format error at line {}".format(idx))
             layer_num = int(m.group('layer'))
