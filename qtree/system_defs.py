@@ -33,6 +33,13 @@ try:
 except Exception:
     log.warn('Tamaki solver is unavailable')
 
+# Check for Flow Cutter solver
+try:
+    FLOW_CUTTER_PATH = os.path.dirname(
+        shutil.which('flow_cutter_pace17'))
+except Exception:
+    log.warn('Flow Cutter solver is unavailable')
+
 MAXIMAL_MEMORY = 1e22   # 100000000 64bit complex numbers
 NP_ARRAY_TYPE = np.complex64
 

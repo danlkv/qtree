@@ -268,7 +268,7 @@ def get_upper_bound_peo_pace2017(
     graph : networkx.Graph
            graph to estimate
     method : str
-           one of {"tamaki"}
+           one of {"tamaki", "flow_cutter"}
     wait_time : float
            allowed running time (in seconds)
 
@@ -283,9 +283,13 @@ def get_upper_bound_peo_pace2017(
     import qtree.graph_model.pace2017_solver_api as api
     method_args = {
         'tamaki':
-        {'command': './tw-heuristic',
-         'cwd': defs.TAMAKI_SOLVER_PATH,
-         'wait_time': wait_time}
+            {'command': './tw-heuristic',
+             'cwd': defs.TAMAKI_SOLVER_PATH,
+             'wait_time': wait_time},
+        'flow_cutter':
+            {'command': './flow_cutter_pace17',
+             'cwd': defs.FLOW_CUTTER_PATH,
+             'wait_time': wait_time}
     }
 
     assert(method in method_args.keys())
@@ -431,7 +435,7 @@ def get_upper_bound_peo(graph, method='tamaki', **kwargs):
            optional keyword arguments to pass to the solver
     """
     builtin_heuristics = {"min_fill", "min_degree", "cardinality"}
-    pace_heuristics = {"tamaki"}
+    pace_heuristics = {"tamaki", "flow_cutter"}
 
     if method in pace_heuristics:
         peo, tw = get_upper_bound_peo_pace2017(graph, method, **kwargs)
