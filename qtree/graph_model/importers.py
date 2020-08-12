@@ -3,6 +3,7 @@ Conversion from other data structures to the graphs supported by
 qtree
 """
 import networkx as nx
+import numpy as np
 import itertools
 import re
 import lzma
@@ -212,6 +213,65 @@ def buckets2graph(buckets, ignore_variables=[]):
             remove_node(graph, var)
 
     return graph
+
+
+def buckets2hypergraph(buckets):
+    """
+    Takes buckets and produces a corresponding undirected graph. Single
+    variable tensors are coded as self loops and there may be
+    multiple parallel edges.
+
+    Parameters
+    ----------
+    buckets : list of lists
+
+    Returns
+    -------
+    graph : kahypar.Hypergraph
+            contraction graph of the circuit
+    """
+    import kahypar
+
+    graph_nodes = []
+    graph_edges = []
+
+    # build an undirected graph for variables
+    for n, bucket in enumerate(buckets):
+        for tensor in bucket:
+            new_nodes = []
+            for idx in tensor.indices:
+                if not(idx in graph_nodes):
+                    graph_nodes.append(int(idx))
+                    new_nodes.append(int(idx))
+            if len(new_nodes) > 1:
+                edges = new_nodes
+            else:
+                # If this is a single variable tensor, add self loop
+                node = new_nodes[0]
+                edges = [node]
+            graph_edges.append(edges)
+
+    hyperedge_indices = []
+    hyperedges = []
+    index = 0
+
+    for edge in graph_edges:
+        for edge_node in edge:
+            hyperedges.append(edge_node)
+        hyperedge_indices.append(index)
+        index += len(edge)
+
+    # last index is the end of the graph
+    hyperedge_indices.append(len(hyperedges))
+
+    num_nodes = len(graph_nodes)
+    num_nets = len(hyperedge_indices) - 1
+
+    k = 2
+
+    hypergraph = kahypar.Hypergraph(num_nodes, num_nets, hyperedge_indices, hyperedges, k)
+
+    return hypergraph
 
 
 def read_gr_file(file_or_data, as_data=False, compressed=False):

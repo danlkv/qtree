@@ -17,4 +17,4 @@ from .splitters import (split_graph_by_metric,
                         split_graph_by_metric_greedy,
                         split_graph_by_tree_trimming)
 
-from .importers import buckets2graph, circ2graph
+from .importers import buckets2graph, circ2graph, buckets2hypergraph
