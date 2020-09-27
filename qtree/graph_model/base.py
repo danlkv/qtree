@@ -242,24 +242,23 @@ def get_cost_by_node(graph, node):
     # can be encoded in multiple edges between the node and its neighbor.
     # We have to count the number of unique tensors.
     tensors = []
-    selfloop_tensors = []
+    # selfloop_tensors = [] # Selfloops
 
     args_to_nx = {'data': 'tensor'}
 
     if graph.is_multigraph():
         args_to_nx['keys'] = True
 
-    for edgedata in graph.edges.data(**args_to_nx):
+    for edgedata in graph.edges(node, **args_to_nx):
         *edge, tensor = edgedata
         u, v, *edge_key = edge
         edge_key = edge_key[0] if edge_key != [] else 0
         # the tuple (edge_key, indices, data_key) uniquely
         # identifies a tensor
-        tensors.append((
-            edge_key, tensor['indices'], tensor['data_key']))
-        if u == v:
-            selfloop_tensors.append((
-                edge_key, tensor['indices'], tensor['data_key']))
+        tensor_uniq_tuple = (edge_key, tensor['indices'], tensor['data_key'])
+        tensors.append(tensor_uniq_tuple)
+        # if u == v:
+        #     selfloop_tensors.append(tensor_uniq_tuple) # Selfloops
 
     # get unique tensors
     tensors = set(tensors)
@@ -267,7 +266,7 @@ def get_cost_by_node(graph, node):
     # Now find the size of the result.
     # Ensure the node itself from the list of its neighbors.
     # This eliminates possible self loop
-    neighbors_wo_node = copy.copy(neighbors_with_size)
+    neighbors_wo_node = neighbors_with_size
     while node in neighbors_wo_node:
         neighbors_wo_node.pop(node)
 
