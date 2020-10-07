@@ -278,8 +278,7 @@ class Z(Gate):
     :math:`Z`-gate
     """
     def gen_tensor(self):
-        return np.array([1, -1],
-                        dtype=defs.NP_ARRAY_TYPE)
+        return np.diag([1, -1]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
     cirq_op = cirq.Z
@@ -291,9 +290,7 @@ class cZ(Gate):
     Controlled :math:`Z` gate
     """
     def gen_tensor(self):
-        return np.array([[1, 1],
-                         [1, -1]],
-                        dtype=defs.NP_ARRAY_TYPE)
+        return np.diag([1, 1, 1, -1]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4)
     _changes_qubits = (0,1)
     cirq_op = cirq.CZ
 
@@ -303,8 +300,7 @@ class T(Gate):
     :math:`T`-gate
     """
     def gen_tensor(self):
-        return np.array([1, np.exp(1.j*np.pi/4)],
-                        dtype=defs.NP_ARRAY_TYPE)
+        return np.diag([1, np.exp(1.j*np.pi/4)]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0,)
     cirq_op = cirq.T
@@ -316,8 +312,7 @@ class Tdag(Gate):
     """
     def gen_tensor(self):
         pass
-        return np.array([1, np.exp(-1.j*np.pi/4)],
-                        dtype=defs.NP_ARRAY_TYPE)
+        return np.diag([1, np.exp(-1.j*np.pi/4)]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
     cirq_op = cirq.inverse(cirq.T)
@@ -328,8 +323,7 @@ class S(Gate):
     :math:`S`-gate
     """
     def gen_tensor(self):
-        return np.array([1, 1j],
-                        dtype=defs.NP_ARRAY_TYPE)
+        return np.diag([1, 1j]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0,)
     cirq_op = cirq.S
@@ -405,10 +399,11 @@ class X(Gate):
 
 class cX(Gate):
     def gen_tensor(self):
-        return np.array([[[1., 0.],
-                          [0., 1.]],
-                         [[0., 1.],
-                          [1., 0.]]])
+        return np.array([[1., 0., 0., 0.],
+                         [0., 1., 0., 0.],
+                         [0., 0., 0., 1.],
+                         [0., 0., 1., 0.],
+                        ]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4)
 
     _changes_qubits = (0, 1)
     cirq_op = cirq.CNOT
@@ -553,6 +548,7 @@ class XPhase(ParametricGate):
     """
 
     _changes_qubits = (0, )
+    parameter_count = 1
 
     @staticmethod
     def _gen_tensor(**parameters):
@@ -665,6 +661,12 @@ LABEL_TO_GATE_DICT = {
 }
 
 def read_circuit_file(filename, max_depth=None):
+    log.info("reading file {}".format(filename))
+    with open(filename, "r") as fp:
+        n, qc = read_circuit_stream(fp, max_depth=max_depth)
+    return n, qc
+
+def read_circuit_stream(stream, max_depth=None):
     """
     Read circuit file and return quantum circuit in the
     form of a list of lists
@@ -688,65 +690,66 @@ def read_circuit_file(filename, max_depth=None):
     params_search_patt_1 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+)$'
     params_search_patt_2 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+) (?P<beta>-?\d+\.\d+)$'
 
-    log.info("reading file {}".format(filename))
     circuit = []
     circuit_layer = []
 
-    with open(filename, "r") as fp:
-        qubit_count = int(fp.readline())
-        log.info("There are {:d} qubits in circuit".format(qubit_count))
-        n_ignored_layers = 0
-        current_layer = 0
+    qubit_count = int(stream.readline())
+    log.info("There are {:d} qubits in circuit".format(qubit_count))
+    n_ignored_layers = 0
+    current_layer = 0
 
-        for idx, line in enumerate(fp):
-            m = re.search(r'(?P<layer>[0-9]+) (?=[a-z])', line)
-            if m is None:
-                raise Exception("file format error at line {}".format(idx))
-            # Read circuit layer by layer
-            layer_num = int(m.group('layer'))
+    for idx, line in enumerate(stream):
+        if not line or line =='\n':
+            break
 
-            if max_depth is not None and layer_num > max_depth:
-                n_ignored_layers = layer_num - max_depth
-                continue
+        m = re.search(r'(?P<layer>[0-9]+) (?=[a-z])', line)
+        if m is None:
+            raise Exception("file format error at line {}: {}".format(idx, line))
+        # Read circuit layer by layer
+        layer_num = int(m.group('layer'))
 
-            if layer_num > current_layer:
-                circuit.append(circuit_layer)
-                circuit_layer = []
-                current_layer = layer_num
+        if max_depth is not None and layer_num > max_depth:
+            n_ignored_layers = layer_num - max_depth
+            continue
 
-            op_str = line[m.end():]
-            m = re.search(operation_search_patt, op_str)
-            if m is None:
-                raise Exception("file format error in {}".format(op_str))
+        if layer_num > current_layer:
+            circuit.append(circuit_layer)
+            circuit_layer = []
+            current_layer = layer_num
 
-            op_identif = m.group('operation')
+        op_str = line[m.end():]
+        m = re.search(operation_search_patt, op_str)
+        if m is None:
+            raise Exception("file format error in {}".format(op_str))
 
-            q_idx = tuple(int(qq) for qq in m.group('qubits').split())
-            op_cls = LABEL_TO_GATE_DICT[op_identif]
-            if op_identif=='fsh':
-                circuit_layer.append(cZ(*q_idx))
-                circuit_layer.append(H(q_idx[0]))
-                circuit_layer.append(H(q_idx[1]))
-                circuit_layer.append(cZ(*q_idx))
+        op_identif = m.group('operation')
+
+        q_idx = tuple(int(qq) for qq in m.group('qubits').split())
+        op_cls = LABEL_TO_GATE_DICT[op_identif]
+        if op_identif=='fsh':
+            circuit_layer.append(cZ(*q_idx))
+            circuit_layer.append(H(q_idx[0]))
+            circuit_layer.append(H(q_idx[1]))
+            circuit_layer.append(cZ(*q_idx))
+        else:
+            if issubclass(op_cls, ParametricGate):
+                if op_cls.parameter_count==1:
+                    m = re.search(params_search_patt_1, op_str)
+                    alpha = m.group('alpha')
+                    op = op_cls(*q_idx, alpha=float(alpha))
+                elif op_cls.parameter_count==2:
+                    m = re.search(params_search_patt_2, op_str)
+                    alpha = m.group('alpha')
+                    beta = m.group('beta')
+                    op = op_cls(*q_idx, alpha=float(alpha), beta=float(beta))
             else:
-                if issubclass(op_cls, ParametricGate):
-                    if op_cls.parameter_count==1:
-                        m = re.search(params_search_patt_1, op_str)
-                        alpha = m.group('alpha')
-                        op = op_cls(*q_idx, alpha=float(alpha))
-                    elif op_cls.parameter_count==2:
-                        m = re.search(params_search_patt_2, op_str)
-                        alpha = m.group('alpha')
-                        beta = m.group('beta')
-                        op = op_cls(*q_idx, alpha=float(alpha), beta=float(beta))
-                else:
-                    op = op_cls(*q_idx)
-                circuit_layer.append(op)
+                op = op_cls(*q_idx)
+            circuit_layer.append(op)
 
-        circuit.append(circuit_layer)  # last layer
+    circuit.append(circuit_layer)  # last layer
 
-        if n_ignored_layers > 0:
-            log.info("Ignored {} layers".format(n_ignored_layers))
+    if n_ignored_layers > 0:
+        log.info("Ignored {} layers".format(n_ignored_layers))
 
     return qubit_count, circuit
 
@@ -757,7 +760,12 @@ def circuit_to_text(circuit, n_qubits):
         for gate in layer:
             qubit_label=reverse_dict[type(gate)]
             qubits = ' '.join([str(q) for q in gate.qubits])
-            file += f"{i} {qubit_label} {qubits} \n"
+            params = gate._parameters
+            param_str = ' '.join([str(x) for x in params.values()])
+            if param_str:
+                file += f"{i} {qubit_label} {qubits} {param_str}\n"
+            else:
+                file += f"{i} {qubit_label} {qubits} \n"
     return file
 
 
@@ -782,11 +790,14 @@ def read_qasm_file(filename, max_ins=None):
     """
     from qiskit import QuantumCircuit
 
+    qiskit_circuit = QuantumCircuit.from_qasm_file(filename)
+    return from_qiskit_circuit(qiskit_circuit)
+
+def from_qiskit_circuit(qiskit_circuit):
+    circuit_qubits = qiskit_circuit.qubits
+
     output_circuit = []
     indexed_circuit = []
-
-    qiskit_circuit = QuantumCircuit.from_qasm_file(filename)
-    circuit_qubits = qiskit_circuit.qubits
 
     # creates the indexed circuit, which replaces
     # qubits with their indices
