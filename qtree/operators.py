@@ -581,7 +581,7 @@ class fSim(ParametricGate):
         s = np.sin(alpha)
         g = np.exp(-1j*beta)
 
-        return np.array([[[[1, 0],
+        abcd = np.array([[[[1, 0],
                            [0, 0]],
 
                           [[0, c],
@@ -593,6 +593,8 @@ class fSim(ParametricGate):
 
                           [[0, 0],
                            [0, g]]]])
+        acbd = np.swapaxes(abcd, 1, 2)
+        return acbd
 
 class SWAP(Gate):
     ## This gate is a snowflake for graph model
@@ -738,11 +740,16 @@ def read_circuit_stream(stream, max_depth=None):
 
         q_idx = tuple(int(qq) for qq in m.group('qubits').split())
         op_cls = LABEL_TO_GATE_DICT[op_identif]
-        if op_identif=='fsh':
-            circuit_layer.append(cZ(*q_idx))
-            circuit_layer.append(H(q_idx[0]))
-            circuit_layer.append(H(q_idx[1]))
-            circuit_layer.append(cZ(*q_idx))
+        # A conditional on using simplification of fsim gate.
+        if op_identif=='fso':
+            if False:
+                circuit_layer.append(cZ(*q_idx))
+                circuit_layer.append(H(q_idx[0]))
+                circuit_layer.append(H(q_idx[1]))
+                circuit_layer.append(cZ(*q_idx))
+            else:
+                circuit_layer.append(cZ(*q_idx))
+                circuit_layer.append(SWAP(*q_idx))
         else:
             if issubclass(op_cls, ParametricGate):
                 if op_cls.parameter_count==1:

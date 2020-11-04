@@ -235,6 +235,7 @@ def circ2buckets(qubit_count, circuit, pdict={}, max_depth=None):
     # Start building the graph in reverse order
     for layer in combined_circ:
         for op in layer:
+            # CUSTOM
             # Swap variables on swap gate 
             if isinstance(op, ops.SWAP):
                 q1, q2 = op.qubits
