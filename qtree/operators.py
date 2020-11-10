@@ -461,7 +461,7 @@ class YPhase(ParametricGate):
             g = exp(i·π·t/2).
     """
 
-    _changes_qubits = tuple()
+    _changes_qubits = (0, )
 
     @staticmethod
     def _gen_tensor(**parameters):
