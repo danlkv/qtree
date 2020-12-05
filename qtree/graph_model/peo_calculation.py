@@ -8,9 +8,11 @@ import numpy as np
 import random
 import re
 import os
+import sys
 import functools
 import itertools
 
+import time
 
 import qtree.system_defs as defs
 from qtree.graph_model.exporters import (generate_cnf_file, generate_gr_file)
@@ -257,6 +259,79 @@ def get_upper_bound_peo_builtin(old_graph, method="min_fill"):
     peo = [inv_dict[pp] for pp in peo]
     return peo, max_degree  # this is clique size - 1
 
+
+def get_upper_bound_peo_pace2017_interactive(
+        old_graph, method="tamaki", max_time=60, max_width=None, print_stats=False):
+    """
+    Calculates a PEO and treewidth using one of the external solvers
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+           graph to estimate
+    method : str
+           one of {"tamaki"}
+    max_time : float
+            Run until not reached time
+    max_width : int
+           Run until not reached width
+
+    Returns
+    -------
+    peo : list
+
+    treewidth : int
+           treewidth
+    """
+    from qtree.graph_model.clique_trees import get_peo_from_tree
+    import qtree.graph_model.pace2017_solver_api as api
+    method_args = {
+        'tamaki':
+        {'command': './tw-heuristic',
+         'cwd': defs.TAMAKI_SOLVER_PATH,
+         }
+    }
+
+    assert(method in method_args.keys())
+    # ensure graph is labelad starting from 1 with integers
+    graph, inv_dict = relabel_graph_nodes(
+        old_graph,
+        dict(zip(old_graph.nodes,
+                 range(1, old_graph.number_of_nodes()+1))))
+
+    # Remove selfloops and parallel edges. Critical
+    graph = get_simple_graph(graph)
+
+    data = generate_gr_file(graph)
+    start = time.time()
+    def callback(line_info):
+        ts, width = line_info
+        print(f'Time={ts}, width={width}', file=sys.stderr)
+        elapsed = time.time() - start
+        if max_time:
+            if elapsed > max_time:
+                raise StopIteration('Timeout')
+        if max_width and width:
+            if width <= max_width:
+                raise StopIteration('Solution is good enough')
+
+    out_data = api.run_heuristic_solver_interactive(
+        data, callback, **method_args[method]
+    )
+    try:
+        stats = get_stats_from_td_file(out_data)
+        if print_stats:
+            print('stats', stats)
+        tree, treewidth = read_td_file(out_data, as_data=True)
+    except ValueError:
+        print(out_data)
+        raise
+    peo = get_peo_from_tree(tree)
+
+    # return to the original labelling
+    peo = [inv_dict[pp] for pp in peo]
+
+    return peo, treewidth
 
 def get_upper_bound_peo_pace2017(
         old_graph, method="tamaki", wait_time=60, print_stats=False):
