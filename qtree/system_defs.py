@@ -32,8 +32,11 @@ try:
     if TAMAKI_SOLVER_PATH is None:
         tamaki_solver_path = os.path.join(
             THIRDPARTY_PATH, 'tamaki_treewidth')
-        if os.path.isdir(tamaki_solver_path):
-            TAMAKI_SOLVER_PATH = tamaki_solver_path
+        if tamaki_solver_path is not None:
+            if os.path.isdir(tamaki_solver_path):
+                TAMAKI_SOLVER_PATH = tamaki_solver_path
+            else:
+                raise Exception(f'No path {tamaki_solver_path}')
         else:
             raise Exception(f'No path {tamaki_solver_path}')
 except Exception as e:
