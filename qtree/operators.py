@@ -54,6 +54,7 @@ class Gate:
     is_parametric(): bool
             Returns False for gates without parameters
     """
+    n_qubits=1
 
     def __init__(self, *qubits):
         self._qubits = tuple(qubits)
@@ -290,6 +291,7 @@ class cZ(Gate):
     """
     Controlled :math:`Z` gate
     """
+    n_qubits=2
     def gen_tensor(self):
         return np.array([[1, 1],
                          [1, -1]],
@@ -404,6 +406,7 @@ class X(Gate):
 
 
 class cX(Gate):
+    n_qubits=2
     def gen_tensor(self):
         return np.array([[[1., 0.],
                           [0., 1.]],

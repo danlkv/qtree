@@ -103,8 +103,12 @@ def run_heuristic_solver_interactive(data, callback,
                      )
     update_info = [None, None]
     p.run(input=data, async_=True)
+    line = p.stdout.readline().decode()
     try:
         while True:
+            if p.poll() is not None:
+                p.wait()
+                break
 
             """ This wierd order is to skip sleep in case of update """
             try:
