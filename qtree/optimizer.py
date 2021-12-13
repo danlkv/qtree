@@ -127,6 +127,10 @@ class Tensor(object):
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, data):
+        self._data = data
+
     def copy(self, name=None, indices=None, data_key=None, data=None):
         if name is None:
             name = self.name
@@ -316,6 +320,11 @@ def circ2buckets(qubit_count, circuit, pdict={}, max_depth=None):
     return buckets, data_dict, bra_variables, ket_variables
 
 
+def bucket_memory(bucket):
+    sizes = [x.data.size for x in bucket]
+    tot = sum(sizes)
+    return tot*16
+
 def bucket_elimination(buckets, process_bucket_fn,
                        n_var_nosum=0):
     """
@@ -342,9 +351,19 @@ def bucket_elimination(buckets, process_bucket_fn,
     n_var_contract = len(buckets) - n_var_nosum
 
     result = None
-    for n, bucket in enumerate(buckets[:n_var_contract]):
+    n = 0
+    # the following line is tricky: slice stores ref to array,
+    # and tensors are not GC-ed. Not fully understand why
+    #for n, bucket in enumerate(buckets[:n_var_contract]):
+    for bucket in buckets:
+        if n==n_var_contract:
+            break
         if len(bucket) > 0:
             tensor = process_bucket_fn(bucket)
+            #-- Memory management
+            buckets[n] = []
+            #--
+
             if len(tensor.indices) > 0:
                 # tensor is not scalar.
                 # Move it to appropriate bucket
@@ -355,6 +374,7 @@ def bucket_elimination(buckets, process_bucket_fn,
                     result *= tensor
                 else:
                     result = tensor
+        n += 1
 
     # form a single list of the rest if any
     rest = list(itertools.chain.from_iterable(buckets[n_var_contract:]))

@@ -55,6 +55,8 @@ class Gate:
             Returns False for gates without parameters
     """
 
+    n_qubits = 1
+
     def __init__(self, *qubits):
         self._qubits = tuple(qubits)
         # supposedly unique id for an instance
@@ -290,6 +292,7 @@ class cZ(Gate):
     """
     Controlled :math:`Z` gate
     """
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[1, 1],
                          [1, -1]],
@@ -404,6 +407,7 @@ class X(Gate):
 
 
 class cX(Gate):
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[[1., 0.],
                           [0., 1.]],
@@ -435,6 +439,7 @@ class Y(Gate):
 
 
 class cY(Gate):
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[[1., 0.],
                           [0., 1.]],
@@ -462,6 +467,7 @@ class YPhase(ParametricGate):
     """
 
     _changes_qubits = (0, )
+    parameter_count = 1
 
     @staticmethod
     def _gen_tensor(**parameters):
@@ -521,6 +527,7 @@ class XPhase(ParametricGate):
     """
 
     _changes_qubits = (0, )
+    parameter_count = 1
 
     @staticmethod
     def _gen_tensor(**parameters):
@@ -571,6 +578,7 @@ class XPhase(ParametricGate):
             exponent=float(self._parameters['alpha']))(x)
 
 class fSim(ParametricGate):
+    n_qubits = 2
     _changes_qubits = (0, 1)
     parameter_count = 2
 
@@ -599,6 +607,7 @@ class fSim(ParametricGate):
 class SWAP(Gate):
     ## This gate is a snowflake for graph model
     ## it swaps qubits
+    n_qubits = 2
     _changes_qubits = tuple()
     @staticmethod
     def gen_tensor():
