@@ -342,7 +342,8 @@ def bucket_elimination(buckets, process_bucket_fn,
     n_var_contract = len(buckets) - n_var_nosum
 
     result = None
-    for n, bucket in enumerate(buckets[:n_var_contract]):
+    for n in range(n_var_contract):
+        bucket = buckets[n]
         if len(bucket) > 0:
             tensor = process_bucket_fn(bucket)
             if len(tensor.indices) > 0:
@@ -355,6 +356,8 @@ def bucket_elimination(buckets, process_bucket_fn,
                     result *= tensor
                 else:
                     result = tensor
+        # free up space, the tensors are no longer needed
+        buckets[n] = []
 
     # form a single list of the rest if any
     rest = list(itertools.chain.from_iterable(buckets[n_var_contract:]))
