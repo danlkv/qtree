@@ -6,7 +6,6 @@ Numpy and Tensorflow can be used as backends for calculations.
 
 import numpy as np
 import networkx as nx
-import matplotlib.pyplot as plt
 import itertools as it
 
 

@@ -3,7 +3,7 @@ This module implements quantum gates from the CMON set of Google
 """
 import numpy as np
 import re
-import cirq
+from qtree.system_defs import cirq
 
 from fractions import Fraction
 from qtree.logger_setup import log
@@ -250,7 +250,6 @@ class M(Gate):
         return np.array([[1, 0], [0, 1]], dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.I
 
 
 class I(Gate):
@@ -258,7 +257,6 @@ class I(Gate):
         return np.array([1, 1], dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.I
 
 
 class H(Gate):
@@ -270,7 +268,7 @@ class H(Gate):
                                         [1, -1]],
                                        dtype=defs.NP_ARRAY_TYPE)
     _changes_qubits = (0, )
-    cirq_op = cirq.H
+    def cirq_op(self, x): return cirq.H(x)
 
 
 class Z(Gate):
@@ -281,7 +279,7 @@ class Z(Gate):
         return np.diag([1, -1]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.Z
+    def cirq_op(self, x): return cirq.Z(x)
 
 
 
@@ -292,7 +290,7 @@ class cZ(Gate):
     def gen_tensor(self):
         return np.diag([1, 1, 1, -1]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4)
     _changes_qubits = (0,1)
-    cirq_op = cirq.CZ
+    def cirq_op(self, x): return cirq.CZ(x)
 
 
 class T(Gate):
@@ -303,7 +301,7 @@ class T(Gate):
         return np.diag([1, np.exp(1.j*np.pi/4)]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0,)
-    cirq_op = cirq.T
+    def cirq_op(self, x): return cirq.T(x)
 
 
 class Tdag(Gate):
@@ -315,7 +313,6 @@ class Tdag(Gate):
         return np.diag([1, np.exp(-1.j*np.pi/4)]).astype(defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.inverse(cirq.T)
 
 
 class S(Gate):
@@ -338,7 +335,6 @@ class Sdag(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.inverse(cirq.S)
 
 
 class X_1_2(Gate):
@@ -403,10 +399,9 @@ class cX(Gate):
                          [0., 1., 0., 0.],
                          [0., 0., 0., 1.],
                          [0., 0., 1., 0.],
-                        ]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4)
+                        ]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4).transpose(0,2,1,3)
 
     _changes_qubits = (0, 1)
-    cirq_op = cirq.CNOT
 
 
 class ccX(Gate):
@@ -415,7 +410,6 @@ class ccX(Gate):
         return np.array([])
 
     _changes_qubits = (1, 2, 3)
-    cirq_op = cirq.CCNOT
 
 
 class Y(Gate):
@@ -431,12 +425,13 @@ class Y(Gate):
 
 class cY(Gate):
     def gen_tensor(self):
-        return np.array([[[1., 0.],
-                          [0., 1.]],
-                         [[0., -1j],
-                          [1j, 0.]]])
+        return np.array([[1., 0., 0., 0.],
+                         [0., 1., 0., 0.],
+                         [0., 0., 0., -1j],
+                         [0., 0., 1j, 0.],
+                        ]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4).transpose(0,2,1,3)
 
-    _changes_qubits = (0, )
+    _changes_qubits = (0, 1)
 
     def cirq_op(self, x): pass
 

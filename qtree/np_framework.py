@@ -208,7 +208,7 @@ def process_bucket_np(bucket, no_sum=False):
             first_index, *result_indices = result_indices
         else:
             first_index, *_ = result_indices
-        tag = first_index.identity
+        tag = str(first_index)
     else:
         tag = 'f'
         result_indices = []

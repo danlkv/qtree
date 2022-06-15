@@ -6,7 +6,7 @@ import itertools
 from operator import mul
 from functools import reduce
 
-import matplotlib.pyplot as plt
+from qtree.system_defs import plt
 from qtree.logger_setup import log
 
 random.seed(0)
