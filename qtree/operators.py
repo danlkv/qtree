@@ -703,8 +703,8 @@ def read_circuit_stream(stream, max_depth=None):
     """
 
     operation_search_patt = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+(?!\.))+)'
-    params_search_patt_1 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+)$'
-    params_search_patt_2 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+) (?P<beta>-?\d+\.\d+)$'
+    params_search_patt_1 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+)\ (?P<alpha>-?\d+\.\d+)$'
+    params_search_patt_2 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+)\ (?P<alpha>-?\d+\.\d+) (?P<beta>-?\d+\.\d+)$'
 
     circuit = []
     circuit_layer = []
@@ -743,7 +743,7 @@ def read_circuit_stream(stream, max_depth=None):
         q_idx = tuple(int(qq) for qq in m.group('qubits').split())
         op_cls = LABEL_TO_GATE_DICT[op_identif]
         # A conditional on using simplification of fsim gate.
-        if op_identif=='fso':
+        if op_identif=='fs':
             if False:
                 circuit_layer.append(cZ(*q_idx))
                 circuit_layer.append(H(q_idx[0]))
@@ -758,10 +758,18 @@ def read_circuit_stream(stream, max_depth=None):
                     m = re.search(params_search_patt_1, op_str)
                     if m is None:
                         raise Exception(f'Could not find parameter for gate. `{line})')
+                    q_idx = tuple(int(qq) for qq in m.group('qubits').split())
                     alpha = m.group('alpha')
-                    op = op_cls(*q_idx, alpha=float(alpha))
+                    try:
+                        op = op_cls(*q_idx, alpha=float(alpha))
+                    except:
+                        print('Error in creating gate for line', line)
+                        raise
                 elif op_cls.parameter_count==2:
                     m = re.search(params_search_patt_2, op_str)
+                    if m is None:
+                        raise Exception(f'Could not find parameter for gate. `{line})')
+                    q_idx = tuple(int(qq) for qq in m.group('qubits').split())
                     alpha = m.group('alpha')
                     beta = m.group('beta')
                     op = op_cls(*q_idx, alpha=float(alpha), beta=float(beta))
