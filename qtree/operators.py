@@ -11,6 +11,7 @@ from functools import partial
 
 import qtree.system_defs as defs
 import uuid
+from collections.abc import Iterable
 
 
 class Gate:
@@ -972,9 +973,8 @@ def _flatten(l):
     -------
     generator of a flattened list
     """
-    import collections
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, (str, bytes)):
+        if isinstance(el, Iterable) and not isinstance(el, (str, bytes)):
             yield from _flatten(el)
         else:
             yield el

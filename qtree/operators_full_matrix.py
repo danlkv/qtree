@@ -288,7 +288,10 @@ class cZ(Gate):
     Controlled :math:`Z` gate
     """
     def gen_tensor(self):
-        return np.diag([1, 1, 1, -1]).astype(defs.NP_ARRAY_TYPE).reshape(*[2]*4)
+        return np.diag([1, 1, 1, -1]
+                       ).astype(defs.NP_ARRAY_TYPE
+                                ).reshape(*[2]*4
+                                          ).transpose(0, 2, 1, 3)
     _changes_qubits = (0,1)
     def cirq_op(self, x): return cirq.CZ(x)
 
