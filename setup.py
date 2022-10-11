@@ -9,16 +9,16 @@ import setuptools
 
 # Configure the required packages and scripts to install.
 REQUIRED_PACKAGES = [
-    'numpy>=1.18.1',
+    'numpy',
     'networkx>=2.3',
-    'matplotlib>=3.1.3',
+    'matplotlib',
     'google-api-core<=1.17.0',
     'cirq'
 
 ]
 
 setuptools.setup(name='qtensor-qtree',
-                 version='0.1.1',
+                 version='0.1.2',
                  description='Simple quantum circuit simulator'
                  ' based on undirected graphical models',
                  url='https://github.com/Huawei-HiQ/qtree',

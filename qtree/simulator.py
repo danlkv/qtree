@@ -32,7 +32,7 @@ def get_amplitudes_from_cirq(filename, initial_state=0):
     log.info("Simulation completed\n")
 
     # Cirq for some reason computes all amplitudes with phase -1j
-    return result.final_state
+    return result.final_state_vector
 
 
 def eval_circuit(n_qubits, circuit, final_state,

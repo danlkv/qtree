@@ -270,7 +270,7 @@ def get_upper_bound_peo_pace2017_interactive(
     graph : networkx.Graph
            graph to estimate
     method : str
-           one of {"tamaki"}
+           one of {"tamaki", "tamaki_exact"}
     max_time : float
             Run until not reached time
     max_width : int
@@ -285,14 +285,6 @@ def get_upper_bound_peo_pace2017_interactive(
     """
     from qtree.graph_model.clique_trees import get_peo_from_tree
     import qtree.graph_model.pace2017_solver_api as api
-    method_args = {
-        'tamaki':
-        {'command': './tw-heuristic',
-         'cwd': defs.TAMAKI_SOLVER_PATH,
-         }
-    }
-
-    assert(method in method_args.keys())
     # ensure graph is labelad starting from 1 with integers
     graph, inv_dict = relabel_graph_nodes(
         old_graph,
@@ -315,8 +307,25 @@ def get_upper_bound_peo_pace2017_interactive(
             if width <= max_width:
                 raise StopIteration('Solution is good enough')
 
+    method_args = {
+        'tamaki':
+            {'command': './tw-heuristic',
+             'cwd': defs.TAMAKI_SOLVER_PATH,
+             'callback': callback,
+            },
+        'tamaki_exact':
+            {'command': './tw-exact',
+             'cwd': defs.TAMAKI_SOLVER_PATH,
+             'callback': lambda x: print(f'Time={time.time()-start}', file=sys.stderr),
+             'callback_delay': 2
+
+            }
+    }
+
+    assert(method in method_args.keys())
+
     out_data = api.run_heuristic_solver_interactive(
-        data, callback, **method_args[method]
+        data, **method_args[method]
     )
     try:
         stats = get_stats_from_td_file(out_data)

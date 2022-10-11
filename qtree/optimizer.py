@@ -351,13 +351,8 @@ def bucket_elimination(buckets, process_bucket_fn,
     n_var_contract = len(buckets) - n_var_nosum
 
     result = None
-    n = 0
-    # the following line is tricky: slice stores ref to array,
-    # and tensors are not GC-ed. Not fully understand why
-    #for n, bucket in enumerate(buckets[:n_var_contract]):
-    for bucket in buckets:
-        if n==n_var_contract:
-            break
+    for n in range(n_var_contract):
+        bucket = buckets[n]
         if len(bucket) > 0:
             tensor = process_bucket_fn(bucket)
             #-- Memory management
@@ -374,7 +369,8 @@ def bucket_elimination(buckets, process_bucket_fn,
                     result *= tensor
                 else:
                     result = tensor
-        n += 1
+        # free up space, the tensors are no longer needed
+        buckets[n] = []
 
     # form a single list of the rest if any
     rest = list(itertools.chain.from_iterable(buckets[n_var_contract:]))

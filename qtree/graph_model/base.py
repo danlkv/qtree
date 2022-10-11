@@ -6,7 +6,7 @@ import itertools
 from operator import mul
 from functools import reduce
 
-import matplotlib.pyplot as plt
+from qtree.system_defs import plt
 from qtree.logger_setup import log
 
 random.seed(0)
@@ -255,7 +255,7 @@ def get_cost_by_node(graph, node):
         edge_key = edge_key[0] if edge_key != [] else 0
         # the tuple (edge_key, indices, data_key) uniquely
         # identifies a tensor
-        tensor_uniq_tuple = (edge_key, tensor['indices'], tensor['data_key'])
+        tensor_uniq_tuple = (tensor['name'], tensor['indices'], tensor['data_key'])
         tensors.append(tensor_uniq_tuple)
         # if u == v:
         #     selfloop_tensors.append(tensor_uniq_tuple) # Selfloops
@@ -285,11 +285,11 @@ def get_cost_by_node(graph, node):
     assert n_unique_tensors > 0
     n_multiplications = n_unique_tensors - 1
 
-    # There are n_multiplications and 1 addition
+    # There are n_multiplications and `size` additions, due to FMA
     # repeated size_of_the_result*size_of_contracted_variable
     # times for each contraction
     flops = (size_of_the_result *
-             graph.nodes[node]['size']*(1 + n_multiplications))
+             graph.nodes[node]['size']*(graph.nodes[node]['size'] + n_multiplications))
 
     return memory, flops
 
