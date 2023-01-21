@@ -377,12 +377,13 @@ def get_contraction_costs(old_graph, free_vars=[]):
 
     # Estimate cost of the last tensor product if subsets of
     # amplitudes were evaluated
+    subgraphs = [graph.subgraph(c) for c in nx.connected_components(graph)]
     if len(free_vars) > 0:
         size_of_the_result = len(free_vars)
         tensor_orders = [
             subgraph.number_of_nodes()
             for subgraph
-            in nx.components.connected_component_subgraphs(graph)]
+            in subgraphs]
         # memory estimation: the size of the result + all sizes of terms
         memory = 2**size_of_the_result
         for order in tensor_orders:

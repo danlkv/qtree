@@ -135,6 +135,10 @@ class Tensor(object):
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, data):
+        self._data = data
+
     def copy(self, name=None, indices=None, data_key=None, data=None):
         if name is None:
             name = self.name
@@ -324,6 +328,11 @@ def circ2buckets(qubit_count, circuit, pdict={}, max_depth=None):
     return buckets, data_dict, bra_variables, ket_variables
 
 
+def bucket_memory(bucket):
+    sizes = [x.data.size for x in bucket]
+    tot = sum(sizes)
+    return tot*16
+
 def bucket_elimination(buckets, process_bucket_fn,
                        n_var_nosum=0):
     """
@@ -354,6 +363,10 @@ def bucket_elimination(buckets, process_bucket_fn,
         bucket = buckets[n]
         if len(bucket) > 0:
             tensor = process_bucket_fn(bucket)
+            #-- Memory management
+            buckets[n] = []
+            #--
+
             if len(tensor.indices) > 0:
                 # tensor is not scalar.
                 # Move it to appropriate bucket
