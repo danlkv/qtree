@@ -137,6 +137,7 @@ def get_sliced_np_buckets(buckets, data_dict, slice_dict):
             data = data[tuple(slice_bounds)]
 
             # update indices
+            # TODO: handle case where data.shape < indices_sorted
             indices_sliced = [idx.copy(size=size) for idx, size in
                               zip(indices_sorted, data.shape)]
             indices_sliced = [i for sl, i in zip(slice_bounds, indices_sliced) if not isinstance(sl, int)]
