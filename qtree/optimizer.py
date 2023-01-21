@@ -4,10 +4,12 @@ operating on Buckets (without any specific framework) should
 go here.
 """
 
+import numpy as np
 import functools
 import itertools
 import random
 import networkx as nx
+from qtree import system_defs
 import qtree.operators as ops
 
 from qtree.logger_setup import log
@@ -106,6 +108,12 @@ class Tensor(object):
         self._data_key = data_key
         self._data = data
         self._order_key = hash((self.data_key, self.name))
+
+    @classmethod
+    def empty(C, name, indices, dtype=system_defs.NP_ARRAY_TYPE):
+        shape = [i.size for i in indices]
+        data = np.empty(shape, dtype=dtype)
+        return C(name, indices, data=data)
 
     @property
     def name(self):

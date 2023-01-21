@@ -1,3 +1,4 @@
+from . import system_defs
 from . import graph_model
 from . import operators
 # from . import operators_full_matrix
