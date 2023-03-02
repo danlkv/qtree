@@ -261,7 +261,9 @@ def get_upper_bound_peo_builtin(old_graph, method="min_fill"):
 
 
 def get_upper_bound_peo_pace2017_interactive(
-        old_graph, method="tamaki", max_time=60, max_width=None, print_stats=False):
+        old_graph, method="tamaki", max_time=60, max_width=None,
+        print_stats=False, print_progress=True, max_progress_stall=30.
+    ):
     """
     Calculates a PEO and treewidth using one of the external solvers
 
@@ -296,9 +298,21 @@ def get_upper_bound_peo_pace2017_interactive(
 
     data = generate_gr_file(graph)
     start = time.time()
+    _p_last_print = start
+    _p_last_width = 0
     def callback(line_info):
         ts, width = line_info
-        print(f'Time={ts}, width={width}', file=sys.stderr)
+        # --
+        nonlocal _p_last_print
+        nonlocal _p_last_width
+        _p_since_last = time.time() - _p_last_print
+        _p_width_changed = width != _p_last_width
+        _p_should_print = (_p_since_last > max_progress_stall) or _p_width_changed
+        if print_progress and _p_should_print:
+            print(f'Time={ts}, width={width}', file=sys.stderr)
+            _p_last_print = time.time()
+            _p_last_width = width
+        # --
         elapsed = time.time() - start
         if max_time:
             if elapsed > max_time:

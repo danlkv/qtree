@@ -113,10 +113,10 @@ class Tensor(object):
         self._order_key = hash((self.data_key, self.name))
 
     @classmethod
-    def empty(C, name, indices, dtype=system_defs.NP_ARRAY_TYPE):
+    def empty(cls, name, indices, dtype:type=system_defs.NP_ARRAY_TYPE):
         shape = [i.size for i in indices]
         data = np.empty(shape, dtype=dtype)
-        return C(name, indices, data=data)
+        return cls(name, indices, data=data)
 
     @property
     def dtype(self):
