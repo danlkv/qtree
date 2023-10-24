@@ -120,7 +120,10 @@ def get_sliced_np_buckets(buckets, data_dict, slice_dict):
             # get data
             # sort tensor dimensions
             transpose_order = np.argsort(list(map(int, tensor.indices)))
-            data = np.transpose(data_dict[tensor.data_key],
+            data_raw = data_dict[tensor.data_key]
+            if tensor.data is not None:
+                data_raw = tensor.data
+            data = np.transpose(data_raw,
                                 transpose_order)
             # transpose indices
             indices_sorted = [tensor.indices[pp]
@@ -134,16 +137,17 @@ def get_sliced_np_buckets(buckets, data_dict, slice_dict):
                 except KeyError:
                     slice_bounds.append(slice(None))
 
-            data = data[tuple(slice_bounds)]
+            data_slice = data[tuple(slice_bounds)]
 
             # update indices
+            # TODO: handle case where data.shape < indices_sorted
+            indices_sorted = [idx for idx, sl in zip(indices_sorted, slice_bounds) if not isinstance(sl, int)]
             indices_sliced = [idx.copy(size=size) for idx, size in
-                              zip(indices_sorted, data.shape)]
-            indices_sliced = [i for sl, i in zip(slice_bounds, indices_sliced) if not isinstance(sl, int)]
-            assert len(data.shape) == len(indices_sliced)
+                              zip(indices_sorted, data_slice.shape)]
+            assert len(data_slice.shape) == len(indices_sliced)
 
             sliced_bucket.append(
-                tensor.copy(indices=indices_sliced, data=data))
+                tensor.copy(indices=indices_sliced, data=data_slice))
         sliced_buckets.append(sliced_bucket)
 
     return sliced_buckets
@@ -208,7 +212,7 @@ def process_bucket_np(bucket, no_sum=False):
             first_index, *result_indices = result_indices
         else:
             first_index, *_ = result_indices
-        tag = first_index.identity
+        tag = str(first_index)
     else:
         tag = 'f'
         result_indices = []

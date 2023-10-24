@@ -4,10 +4,12 @@ operating on Buckets (without any specific framework) should
 go here.
 """
 
+import numpy as np
 import functools
 import itertools
 import random
 import networkx as nx
+from qtree import system_defs
 import qtree.operators as ops
 
 from qtree.logger_setup import log
@@ -100,12 +102,28 @@ class Tensor(object):
         data: np.array
               Actual data of the tensor. Default None.
               Usually is not supplied at initialization.
+        dtype: np.dtype
+              Data type of the tensor. If this is a simple Tensor
+              equal to Tensor.data.dtype.
         """
         self._name = name
         self._indices = tuple(indices)
         self._data_key = data_key
         self._data = data
         self._order_key = hash((self.data_key, self.name))
+
+    @classmethod
+    def empty(cls, name, indices, dtype:type=system_defs.NP_ARRAY_TYPE):
+        shape = [i.size for i in indices]
+        data = np.empty(shape, dtype=dtype)
+        return cls(name, indices, data=data)
+
+    @property
+    def dtype(self):
+        """
+        DataType of wrapped numpy object
+        """
+        return self._data.dtype
 
     @property
     def name(self):
@@ -127,6 +145,10 @@ class Tensor(object):
     def data(self):
         return self._data
 
+    @data.setter
+    def data(self, data):
+        self._data = data
+
     def copy(self, name=None, indices=None, data_key=None, data=None):
         if name is None:
             name = self.name
@@ -137,6 +159,41 @@ class Tensor(object):
         if data is None:
             data = self.data
         return Tensor(name, indices, data_key, data)
+
+    def _parse_getitem_key(self, key):
+        if isinstance(key, dict):
+            slices_ints = tuple(key.get(idx, slice(None)) for idx in self.indices)
+        elif isinstance(key, tuple):
+            slices_ints= key
+        else:
+            slices_ints = (key,)
+
+        new_indices = []
+        for ix, sl in zip(self.indices, slices_ints):
+            if isinstance(sl, slice):
+                new_size = len(list(range(ix.size))[sl])
+                new_var = ix.copy(size=new_size)
+            elif isinstance(sl, int):
+                continue
+            else:
+                raise ValueError(f"Invalid index slice {sl}. Must me integers or slices")
+            new_indices.append(new_var)
+        return slices_ints, new_indices
+
+    def __getitem__(self, key):
+        """
+        Slice the tensor returning a new Tensor with a view into self._data
+
+        Accepts dict {var:slice/int}, tuple of slices/ints, or a single slice/int
+        """
+        slices_ints, new_indices = self._parse_getitem_key(key)
+        new_name = f"{self.name}[sliced]"
+
+        # This assumes first len(slices_ints) are sliced
+        # if key is a dict, len(slices_ints) == len(self.indices)
+        new_indices += list(self.indices[len(slices_ints):])
+        new_data = self._data[slices_ints]
+        return Tensor(new_name, new_indices, data=new_data)
 
     def __str__(self):
         return '{}({})'.format(self._name, ','.join(
@@ -316,6 +373,11 @@ def circ2buckets(qubit_count, circuit, pdict={}, max_depth=None):
     return buckets, data_dict, bra_variables, ket_variables
 
 
+def bucket_memory(bucket):
+    sizes = [x.data.size for x in bucket]
+    tot = sum(sizes)
+    return tot*16
+
 def bucket_elimination(buckets, process_bucket_fn,
                        n_var_nosum=0):
     """
@@ -342,9 +404,14 @@ def bucket_elimination(buckets, process_bucket_fn,
     n_var_contract = len(buckets) - n_var_nosum
 
     result = None
-    for n, bucket in enumerate(buckets[:n_var_contract]):
+    for n in range(n_var_contract):
+        bucket = buckets[n]
         if len(bucket) > 0:
             tensor = process_bucket_fn(bucket)
+            #-- Memory management
+            buckets[n] = []
+            #--
+
             if len(tensor.indices) > 0:
                 # tensor is not scalar.
                 # Move it to appropriate bucket
@@ -355,6 +422,8 @@ def bucket_elimination(buckets, process_bucket_fn,
                     result *= tensor
                 else:
                     result = tensor
+        # free up space, the tensors are no longer needed
+        buckets[n] = []
 
     # form a single list of the rest if any
     rest = list(itertools.chain.from_iterable(buckets[n_var_contract:]))

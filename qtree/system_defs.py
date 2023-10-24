@@ -57,3 +57,17 @@ try:
 except ImportError:
     pass
 
+
+# -- lazy modules
+
+class LazyModule:
+    def __init__(self, name):
+        self.name = name
+
+    def __getattr__(self, name):
+        module = __import__(self.name, fromlist=[name])
+        self.__dict__[name] = module
+        return module
+
+cirq = LazyModule('cirq')
+plt = LazyModule('matplotlib.pyplot')

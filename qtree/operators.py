@@ -3,7 +3,7 @@ This module implements quantum gates from the CMON set of Google
 """
 import numpy as np
 import re
-import cirq
+from qtree.system_defs import cirq
 
 from fractions import Fraction
 from qtree.logger_setup import log
@@ -11,6 +11,7 @@ from functools import partial
 
 import qtree.system_defs as defs
 import uuid
+from collections.abc import Iterable
 
 
 class Gate:
@@ -55,6 +56,8 @@ class Gate:
             Returns False for gates without parameters
     """
     n_qubits=1
+
+    n_qubits = 1
 
     def __init__(self, *qubits):
         self._qubits = tuple(qubits)
@@ -251,7 +254,8 @@ class M(Gate):
         return np.array([[1, 0], [0, 1]], dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = (0, )
-    cirq_op = cirq.I
+
+    def cirq_op(self, x): return cirq.I(x)
 
 
 class I(Gate):
@@ -259,7 +263,7 @@ class I(Gate):
         return np.array([1, 1], dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.I
+    def cirq_op(self, x): return cirq.I(x)
 
 
 class H(Gate):
@@ -271,7 +275,7 @@ class H(Gate):
                                         [1, -1]],
                                        dtype=defs.NP_ARRAY_TYPE)
     _changes_qubits = (0, )
-    cirq_op = cirq.H
+    def cirq_op(self, x): return cirq.H(x)
 
 
 class Z(Gate):
@@ -283,7 +287,7 @@ class Z(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.Z
+    def cirq_op(self, x): return cirq.Z(x)
 
 
 
@@ -291,13 +295,13 @@ class cZ(Gate):
     """
     Controlled :math:`Z` gate
     """
-    n_qubits=2
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[1, 1],
                          [1, -1]],
                         dtype=defs.NP_ARRAY_TYPE)
     _changes_qubits = tuple()
-    cirq_op = cirq.CZ
+    def cirq_op(self, x): return cirq.CZ(x)
 
 
 class T(Gate):
@@ -309,7 +313,7 @@ class T(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.T
+    def cirq_op(self, x): return cirq.T(x)
 
 
 class Tdag(Gate):
@@ -322,7 +326,6 @@ class Tdag(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.inverse(cirq.T)
 
 
 class S(Gate):
@@ -334,7 +337,7 @@ class S(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.S
+    def cirq_op(self, x): return cirq.S(x)
 
 
 class Sdag(Gate):
@@ -346,7 +349,6 @@ class Sdag(Gate):
                         dtype=defs.NP_ARRAY_TYPE)
 
     _changes_qubits = tuple()
-    cirq_op = cirq.inverse(cirq.S)
 
 
 class X_1_2(Gate):
@@ -406,7 +408,7 @@ class X(Gate):
 
 
 class cX(Gate):
-    n_qubits=2
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[[1., 0.],
                           [0., 1.]],
@@ -414,7 +416,7 @@ class cX(Gate):
                           [1., 0.]]])
 
     _changes_qubits = (1, )
-    cirq_op = cirq.CNOT
+    def cirq_op(self, x): return cirq.CNOT(x)
 
 
 class ccX(Gate):
@@ -423,7 +425,7 @@ class ccX(Gate):
         return np.array([])
 
     _changes_qubits = (2, )
-    cirq_op = cirq.CCNOT
+    def cirq_op(self, x): return cirq.CCNOT(x)
 
 
 class Y(Gate):
@@ -438,6 +440,7 @@ class Y(Gate):
 
 
 class cY(Gate):
+    n_qubits = 2
     def gen_tensor(self):
         return np.array([[[1., 0.],
                           [0., 1.]],
@@ -465,6 +468,7 @@ class YPhase(ParametricGate):
     """
 
     _changes_qubits = (0, )
+    parameter_count = 1
 
     @staticmethod
     def _gen_tensor(**parameters):
@@ -524,6 +528,7 @@ class XPhase(ParametricGate):
     """
 
     _changes_qubits = (0, )
+    parameter_count = 1
 
     @staticmethod
     def _gen_tensor(**parameters):
@@ -574,6 +579,7 @@ class XPhase(ParametricGate):
             exponent=float(self._parameters['alpha']))(x)
 
 class fSim(ParametricGate):
+    n_qubits = 2
     _changes_qubits = (0, 1)
     parameter_count = 2
 
@@ -602,6 +608,7 @@ class fSim(ParametricGate):
 class SWAP(Gate):
     ## This gate is a snowflake for graph model
     ## it swaps qubits
+    n_qubits = 2
     _changes_qubits = tuple()
     @staticmethod
     def gen_tensor():
@@ -704,8 +711,8 @@ def read_circuit_stream(stream, max_depth=None):
     """
 
     operation_search_patt = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+(?!\.))+)'
-    params_search_patt_1 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+)$'
-    params_search_patt_2 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+) (?P<alpha>-?\d+\.\d+) (?P<beta>-?\d+\.\d+)$'
+    params_search_patt_1 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+)\ (?P<alpha>-?\d+\.\d+)$'
+    params_search_patt_2 = r'(?P<operation>' + r'|'.join(LABEL_TO_GATE_DICT.keys()) + r')(?P<qubits>( \d+)+)\ (?P<alpha>-?\d+\.\d+) (?P<beta>-?\d+\.\d+)$'
 
     circuit = []
     circuit_layer = []
@@ -744,7 +751,7 @@ def read_circuit_stream(stream, max_depth=None):
         q_idx = tuple(int(qq) for qq in m.group('qubits').split())
         op_cls = LABEL_TO_GATE_DICT[op_identif]
         # A conditional on using simplification of fsim gate.
-        if op_identif=='fso':
+        if op_identif=='fs':
             if False:
                 circuit_layer.append(cZ(*q_idx))
                 circuit_layer.append(H(q_idx[0]))
@@ -759,10 +766,18 @@ def read_circuit_stream(stream, max_depth=None):
                     m = re.search(params_search_patt_1, op_str)
                     if m is None:
                         raise Exception(f'Could not find parameter for gate. `{line})')
+                    q_idx = tuple(int(qq) for qq in m.group('qubits').split())
                     alpha = m.group('alpha')
-                    op = op_cls(*q_idx, alpha=float(alpha))
+                    try:
+                        op = op_cls(*q_idx, alpha=float(alpha))
+                    except:
+                        print('Error in creating gate for line', line)
+                        raise
                 elif op_cls.parameter_count==2:
                     m = re.search(params_search_patt_2, op_str)
+                    if m is None:
+                        raise Exception(f'Could not find parameter for gate. `{line})')
+                    q_idx = tuple(int(qq) for qq in m.group('qubits').split())
                     alpha = m.group('alpha')
                     beta = m.group('beta')
                     op = op_cls(*q_idx, alpha=float(alpha), beta=float(beta))
@@ -965,9 +980,8 @@ def _flatten(l):
     -------
     generator of a flattened list
     """
-    import collections
     for el in l:
-        if isinstance(el, collections.Iterable) and not isinstance(el, (str, bytes)):
+        if isinstance(el, Iterable) and not isinstance(el, (str, bytes)):
             yield from _flatten(el)
         else:
             yield el
