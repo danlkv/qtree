@@ -310,10 +310,11 @@ def get_upper_bound_peo_pace2017_interactive(
         _p_width_changed = width != _p_last_width
         if callback is not None:
             if _p_width_changed:
-                callback(line_info)
+                if ts is not None:
+                    callback((ts/1000, width))
         _p_should_print = (_p_since_last > max_progress_stall) or _p_width_changed
         if print_progress and _p_should_print:
-            print(f'Time={ts}, width={width}', file=sys.stderr)
+            print(f'Time(ms)={ts}, width={width}', file=sys.stderr)
             _p_last_print = time.time()
             _p_last_width = width
         # --
@@ -350,6 +351,8 @@ def get_upper_bound_peo_pace2017_interactive(
         if print_stats:
             print('stats', stats)
         tree, treewidth = read_td_file(out_data, as_data=True)
+        if callback is not None:
+            callback((time.time()-start, treewidth))
     except ValueError:
         print(out_data)
         raise
