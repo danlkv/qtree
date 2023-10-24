@@ -303,13 +303,14 @@ def get_upper_bound_peo_pace2017_interactive(
     _p_last_width = 0
     def main_callback(line_info):
         ts, width = line_info
-        if callback:
-            callback(line_info)
         # --
         nonlocal _p_last_print
         nonlocal _p_last_width
         _p_since_last = time.time() - _p_last_print
         _p_width_changed = width != _p_last_width
+        if callback is not None:
+            if _p_width_changed:
+                callback(width)
         _p_should_print = (_p_since_last > max_progress_stall) or _p_width_changed
         if print_progress and _p_should_print:
             print(f'Time={ts}, width={width}', file=sys.stderr)
