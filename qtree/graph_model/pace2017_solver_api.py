@@ -103,11 +103,13 @@ def run_heuristic_solver_interactive(data, callback,
                      )
     update_info = [None, None]
     p.run(input=data, async_=True)
-    line = p.stdout.readline().decode()
+    lines = []
+    #line = p.stdout.readline().decode()
     try:
         while True:
             if p.poll() is not None:
                 p.wait()
+                print("Tamaki stopped")
                 break
 
             """ This wierd order is to skip sleep in case of update """
@@ -125,6 +127,8 @@ def run_heuristic_solver_interactive(data, callback,
             if maybe_width:
                 width = int(maybe_width.group('width'))
                 update_info[1] = width
+            else:
+                lines.append(line)
             line = p.stdout.readline().decode()
 
             maybe_time = time_pattern.search(line)
@@ -132,6 +136,8 @@ def run_heuristic_solver_interactive(data, callback,
                 time_ = int(maybe_time.group('time'))
                 update_info[0] = time_
                 continue
+            else:
+                lines.append(line)
 
             time.sleep(callback_delay)
     except BaseException as e:
@@ -141,6 +147,8 @@ def run_heuristic_solver_interactive(data, callback,
         p.terminate()
     p.wait()
     data = p.stdout.read().decode()
+    data = ''.join(lines) + data
+    #print("Tamaki output:\n", data)
     return data
 
 
