@@ -148,6 +148,9 @@ def run_heuristic_solver_interactive(data, callback,
     p.wait()
     data = p.stdout.read().decode()
     data = ''.join(lines) + data
+    err = p.stderr.read().decode()
+    if err:
+        raise Exception("Java Error:\n"+err)
     #print("Tamaki output:\n", data)
     return data
 
