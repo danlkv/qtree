@@ -545,6 +545,10 @@ def reorder_buckets(old_buckets, permutation):
     for bucket in old_buckets:
         for tensor in bucket:
             new_indices = [perm_dict[idx] for idx in tensor.indices]
+            if len(new_indices) == 0:
+                # scalar tensor, add to the first bucket
+                new_buckets[0].append(tensor)
+                continue
             bucket_idx = sorted(
                 new_indices, key=int)[0].identity
             # we leave the variables permuted, as the permutation

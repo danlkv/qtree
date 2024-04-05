@@ -195,6 +195,9 @@ def buckets2graph(buckets, ignore_variables=[]):
                 edges = itertools.combinations(new_nodes, 2)
             else:
                 # If this is a single variable tensor, add self loop
+                if len(new_nodes) == 0:
+                    # Scalar tensor, no need to add to graph
+                    continue
                 node = new_nodes[0]
                 edges = [[node, node]]
             graph.add_edges_from(
