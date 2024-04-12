@@ -295,6 +295,9 @@ def maximum_cardinality_search(
     last_clique_vertices = [int(var) for var in last_clique_vertices]
 
     # Check is last_clique_vertices is a clique
+    if len(last_clique_vertices) > 0:
+        if not is_clique(old_graph, last_clique_vertices):
+            raise ValueError('last_clique_vertices are not a clique')
 
     graph = copy.deepcopy(old_graph)
     n_nodes = graph.number_of_nodes()
