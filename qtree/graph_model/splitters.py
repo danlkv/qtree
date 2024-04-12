@@ -454,7 +454,7 @@ def split_graph_by_metric_greedy(
 
 
 def split_graph_by_tree_trimming(
-        old_graph, n_var_parallel):
+        old_graph, n_var_parallel, ignore_indices=[]):
     """
     Splits graph by removing variables from its tree decomposition.
     The graph is **ASSUMED** to be in the perfect elimination order,
@@ -510,6 +510,11 @@ def split_graph_by_tree_trimming(
             nodes_in_rmorder,
             key=lambda x: (x[1], x[2]))
         rmnode = nodes_in_rmorder[-1][0]
+        j = 1
+        while rmnode in ignore_indices:
+            #print('Ignoring selected node', rmnode)
+            rmnode = nodes_in_rmorder[len(nodes_in_rmorder) -1 -j][0]
+            j += 1
         tree = rm_element_in_tree(tree, rmnode)
         eliminated_nodes.append(rmnode)
 
@@ -528,7 +533,7 @@ def split_graph_by_tree_trimming(
 
 # Duplicate with changed sorting
 def split_graph_by_tree_trimming_width(
-        old_graph, n_var_parallel):
+        old_graph, n_var_parallel, ignore_indices=[]):
     """
     Splits graph by removing variables from its tree decomposition.
     The graph is **ASSUMED** to be in the perfect elimination order,
@@ -584,6 +589,10 @@ def split_graph_by_tree_trimming_width(
             nodes_in_rmorder,
             key=lambda x: (x[2], x[1]))
         rmnode = nodes_in_rmorder[-1][0]
+        j = 1
+        while rmnode in ignore_indices:
+            rmnode = nodes_in_rmorder[len(nodes_in_rmorder) -1 -j][0]
+            j += 1
         tree = rm_element_in_tree(tree, rmnode)
         eliminated_nodes.append(rmnode)
 
