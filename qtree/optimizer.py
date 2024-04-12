@@ -212,7 +212,8 @@ class Tensor(object):
             return self.copy(data=self._data * other._data)
         elif len(self.indices) == 0 or len(other.indices) == 0:
             # Scalar multiplication
-            return self.copy(data=self._data * other._data)
+            new_indices = self.indices + other.indices
+            return self.copy(data=self._data * other._data, indices=new_indices)
         else:
             raise ValueError(f'Index mismatch in __mul__: {self.indices} times {other.indices}')
 
@@ -545,6 +546,7 @@ def reorder_buckets(old_buckets, permutation):
     for bucket in old_buckets:
         for tensor in bucket:
             new_indices = [perm_dict[idx] for idx in tensor.indices]
+            #print('tensor!', tensor, new_indices)
             if len(new_indices) == 0:
                 # scalar tensor, add to the first bucket
                 new_buckets[0].append(tensor)
